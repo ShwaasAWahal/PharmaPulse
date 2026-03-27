@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile - Pharma Pulse</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <div class="navbar-brand">
+                <svg class="logo-icon" viewBox="0 0 24 24" width="28" height="28">
+                    <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/>
+                    <path d="M12 6v12M6 12h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+                <span class="brand-name">Pharma Pulse</span>
+            </div>
+            <div class="nav-links">
+                <a href="index.html" class="nav-link">Shop</a>
+                <a href="cart.html" class="nav-link">
+                    Cart
+                    <span class="cart-badge" id="cartBadge">0</span>
+                </a>
+                <a href="orders.html" class="nav-link">Orders</a>
+                <a href="admin.html" class="nav-link">Admin</a>
+                <a href="profile.html" class="nav-link active">Profile</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="page-header">
+            <h1>My Profile</h1>
+            <p class="subtitle">Manage your account information</p>
+        </div>
+
+        <div class="profile-wrapper">
+            <aside class="profile-sidebar">
+                <div class="profile-info">
+                    <div class="profile-avatar">👤</div>
+                    <h3 id="profileName">John Doe</h3>
+                    <p id="profilePhone">+91 XXXXXXXXXX</p>
+                </div>
+                <nav class="profile-nav">
+                    <a href="#" class="profile-nav-link active" data-section="personal">Personal Info</a>
+                    <a href="#" class="profile-nav-link" data-section="addresses">Addresses</a>
+                    <a href="#" class="profile-nav-link" data-section="preferences">Preferences</a>
+                    <a href="#" class="profile-nav-link" data-section="security">Security</a>
+                </nav>
+            </aside>
+
+            <main class="profile-content">
+                <!-- Personal Info Section -->
+                <section id="personal-section" class="profile-section active">
+                    <div class="section-header">
+                        <h2>Personal Information</h2>
+                        <button class="btn btn-secondary" id="editPersonalBtn">Edit</button>
+                    </div>
+
+                    <div class="info-display" id="personalDisplay">
+                        <div class="info-row">
+                            <span class="info-label">Full Name</span>
+                            <span class="info-value" id="displayName">John Doe</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Phone</span>
+                            <span class="info-value" id="displayPhone">+91 98765 43210</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Email</span>
+                            <span class="info-value" id="displayEmail">john@example.com</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Date of Birth</span>
+                            <span class="info-value" id="displayDob">15/03/1990</span>
+                        </div>
+                    </div>
+
+                    <form id="personalForm" class="info-form" style="display: none;">
+                        <div class="form-group">
+                            <label for="fullName">Full Name</label>
+                            <input type="text" id="fullName" value="John Doe" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="phone">Phone</label>
+                            <input type="tel" id="phone" value="+91 98765 43210" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="email">Email</label>
+                            <input type="email" id="email" value="john@example.com" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="dob">Date of Birth</label>
+                            <input type="date" id="dob" value="1990-03-15" required>
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">Save Changes</button>
+                            <button type="button" class="btn btn-secondary" id="cancelPersonalBtn">Cancel</button>
+                        </div>
+                    </form>
+                </section>
+
+                <!-- Addresses Section -->
+                <section id="addresses-section" class="profile-section">
+                    <div class="section-header">
+                        <h2>Delivery Addresses</h2>
+                        <button class="btn btn-primary" id="addAddressBtn">+ Add Address</button>
+                    </div>
+
+                    <div class="addresses-list" id="addressesList">
+                        <!-- Will be populated by JavaScript -->
+                    </div>
+                </section>
+
+                <!-- Preferences Section -->
+                <section id="preferences-section" class="profile-section">
+                    <div class="section-header">
+                        <h2>Preferences</h2>
+                    </div>
+
+                    <div class="preferences-group">
+                        <div class="preference-item">
+                            <div class="preference-info">
+                                <h4>Email Notifications</h4>
+                                <p>Receive email updates about orders and promotions</p>
+                            </div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="emailNotif" checked>
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+
+                        <div class="preference-item">
+                            <div class="preference-info">
+                                <h4>SMS Notifications</h4>
+                                <p>Get SMS updates about your orders</p>
+                            </div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="smsNotif" checked>
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+
+                        <div class="preference-item">
+                            <div class="preference-info">
+                                <h4>Promotional Updates</h4>
+                                <p>Receive information about special offers and new medicines</p>
+                            </div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="promoNotif">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Security Section -->
+                <section id="security-section" class="profile-section">
+                    <div class="section-header">
+                        <h2>Security & Password</h2>
+                    </div>
+
+                    <div class="security-content">
+                        <div class="security-item">
+                            <div class="security-info">
+                                <h4>Password</h4>
+                                <p>Last changed 45 days ago</p>
+                            </div>
+                            <button class="btn btn-secondary" id="changePasswordBtn">Change Password</button>
+                        </div>
+
+                        <div class="security-item">
+                            <div class="security-info">
+                                <h4>Two-Factor Authentication</h4>
+                                <p>Add an extra layer of security to your account</p>
+                            </div>
+                            <button class="btn btn-secondary">Enable 2FA</button>
+                        </div>
+
+                        <div class="security-item danger">
+                            <div class="security-info">
+                                <h4>Delete Account</h4>
+                                <p>Permanently delete your account and all data</p>
+                            </div>
+                            <button class="btn btn-danger">Delete Account</button>
+                        </div>
+                    </div>
+                </section>
+            </main>
+        </div>
+    </div>
+
+    <!-- Modal for changing password -->
+    <div class="modal" id="passwordModal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h2>Change Password</h2>
+            <form id="passwordForm">
+                <div class="form-group">
+                    <label for="currentPassword">Current Password</label>
+                    <input type="password" id="currentPassword" required>
+                </div>
+                <div class="form-group">
+                    <label for="newPassword">New Password</label>
+                    <input type="password" id="newPassword" required>
+                </div>
+                <div class="form-group">
+                    <label for="confirmPassword">Confirm Password</label>
+                    <input type="password" id="confirmPassword" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Update Password</button>
+            </form>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2026 Pharma Pulse. All rights reserved. | <a href="#">Privacy Policy</a> | <a href="#">Terms of Service</a></p>
+        </div>
+    </footer>
+
+    <script src="app.js"></script>
+    <script src="profile.js"></script>
+</body>
+</html>

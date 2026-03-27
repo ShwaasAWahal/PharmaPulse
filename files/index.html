@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pharma Pulse - Buy Medicines Online</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <div class="navbar-brand">
+                <svg class="logo-icon" viewBox="0 0 24 24" width="28" height="28">
+                    <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/>
+                    <path d="M12 6v12M6 12h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+                <span class="brand-name">Pharma Pulse</span>
+            </div>
+            <div class="nav-links">
+                <a href="index.html" class="nav-link active">Shop</a>
+                <a href="cart.html" class="nav-link">
+                    Cart
+                    <span class="cart-badge" id="cartBadge">0</span>
+                </a>
+                <a href="orders.html" class="nav-link">Orders</a>
+                <a href="admin.html" class="nav-link">Admin</a>
+                <a href="profile.html" class="nav-link">Profile</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="hero">
+        <div class="container">
+            <h1 class="hero-title">Your Trusted Healthcare Companion</h1>
+            <p class="hero-subtitle">Browse verified medicines from trusted companies. Fast delivery, competitive prices.</p>
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="Search medicines or companies..." class="search-input">
+                <button class="search-btn">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <path d="m21 21-4.35-4.35"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="filter-section">
+            <div class="filter-group">
+                <label for="categoryFilter">Category</label>
+                <select id="categoryFilter" class="filter-select">
+                    <option value="">All Categories</option>
+                    <option value="antibiotics">Antibiotics</option>
+                    <option value="pain-relief">Pain Relief</option>
+                    <option value="vitamins">Vitamins & Supplements</option>
+                    <option value="cough-cold">Cough & Cold</option>
+                    <option value="digestive">Digestive Health</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="companyFilter">Company</label>
+                <select id="companyFilter" class="filter-select">
+                    <option value="">All Companies</option>
+                    <option value="cipla">Cipla</option>
+                    <option value="glaxo">Glaxo SmithKline</option>
+                    <option value="lupin">Lupin</option>
+                    <option value="sun">Sun Pharma</option>
+                    <option value="divi">Divi's Labs</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="medicines-grid" id="medicinesGrid">
+            <!-- Will be populated by JavaScript -->
+        </div>
+    </div>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2026 Pharma Pulse. All rights reserved. | <a href="#">Privacy Policy</a> | <a href="#">Terms of Service</a></p>
+        </div>
+    </footer>
+
+    <script src="app.js"></script>
+</body>
+</html>

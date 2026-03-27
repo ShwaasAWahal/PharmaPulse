@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Pharma Pulse</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <div class="navbar-brand">
+                <svg class="logo-icon" viewBox="0 0 24 24" width="28" height="28">
+                    <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/>
+                    <path d="M12 6v12M6 12h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+                <span class="brand-name">Pharma Pulse</span>
+            </div>
+            <div class="nav-links">
+                <a href="index.html" class="nav-link">Shop</a>
+                <a href="cart.html" class="nav-link">
+                    Cart
+                    <span class="cart-badge" id="cartBadge">0</span>
+                </a>
+                <a href="orders.html" class="nav-link">Orders</a>
+                <a href="admin.html" class="nav-link active">Admin</a>
+                <a href="profile.html" class="nav-link">Profile</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="admin-wrapper">
+        <aside class="admin-sidebar">
+            <div class="sidebar-section">
+                <h4>Dashboard</h4>
+                <a href="#" class="sidebar-link active" data-section="inventory">Inventory</a>
+                <a href="#" class="sidebar-link" data-section="expiry">Expiry Tracking</a>
+                <a href="#" class="sidebar-link" data-section="orders">Orders Management</a>
+                <a href="#" class="sidebar-link" data-section="analytics">Analytics</a>
+            </div>
+        </aside>
+
+        <main class="admin-content">
+            <div class="container">
+                <!-- Inventory Section -->
+                <section id="inventory-section" class="admin-section active">
+                    <div class="page-header">
+                        <h1>Inventory Management</h1>
+                        <button class="btn btn-primary" id="addMedicineBtn">+ Add Medicine</button>
+                    </div>
+
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-icon">📦</div>
+                            <div class="stat-content">
+                                <h4>Total Medicines</h4>
+                                <p class="stat-number" id="totalMedicines">0</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">⚠️</div>
+                            <div class="stat-content">
+                                <h4>Low Stock</h4>
+                                <p class="stat-number" id="lowStock">0</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">🚫</div>
+                            <div class="stat-content">
+                                <h4>Out of Stock</h4>
+                                <p class="stat-number" id="outOfStock">0</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">⏰</div>
+                            <div class="stat-content">
+                                <h4>Expiring Soon</h4>
+                                <p class="stat-number" id="expiringSoon">0</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="table-wrapper">
+                        <table class="admin-table">
+                            <thead>
+                                <tr>
+                                    <th>Medicine Name</th>
+                                    <th>Company</th>
+                                    <th>Batch</th>
+                                    <th>Stock</th>
+                                    <th>Price</th>
+                                    <th>Expiry Date</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="inventoryTable">
+                                <!-- Will be populated by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- Expiry Tracking Section -->
+                <section id="expiry-section" class="admin-section">
+                    <div class="page-header">
+                        <h1>Expiry Date Tracking</h1>
+                    </div>
+
+                    <div class="expiry-filters">
+                        <div class="filter-group">
+                            <label for="expiryRange">Show medicines expiring in</label>
+                            <select id="expiryRange" class="filter-select">
+                                <option value="7">Next 7 days</option>
+                                <option value="30">Next 30 days</option>
+                                <option value="90">Next 90 days</option>
+                                <option value="all">All medicines</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="expiry-timeline" id="expiryTimeline">
+                        <!-- Will be populated by JavaScript -->
+                    </div>
+                </section>
+
+                <!-- Orders Management Section -->
+                <section id="orders-section" class="admin-section">
+                    <div class="page-header">
+                        <h1>Orders Management</h1>
+                    </div>
+
+                    <div class="filter-section">
+                        <div class="filter-group">
+                            <label for="orderStatus">Filter by Status</label>
+                            <select id="orderStatus" class="filter-select">
+                                <option value="">All Orders</option>
+                                <option value="pending">Pending</option>
+                                <option value="processing">Processing</option>
+                                <option value="shipped">Shipped</option>
+                                <option value="delivered">Delivered</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="table-wrapper">
+                        <table class="admin-table">
+                            <thead>
+                                <tr>
+                                    <th>Order ID</th>
+                                    <th>Customer</th>
+                                    <th>Items</th>
+                                    <th>Amount</th>
+                                    <th>Status</th>
+                                    <th>Date</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="ordersTable">
+                                <!-- Will be populated by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- Analytics Section -->
+                <section id="analytics-section" class="admin-section">
+                    <div class="page-header">
+                        <h1>Analytics</h1>
+                    </div>
+
+                    <div class="analytics-grid">
+                        <div class="chart-card">
+                            <h3>Sales by Company</h3>
+                            <div class="chart-placeholder" id="companySalesChart">
+                                <!-- Will be populated by JavaScript -->
+                            </div>
+                        </div>
+                        <div class="chart-card">
+                            <h3>Top 5 Best Sellers</h3>
+                            <div class="chart-placeholder" id="topSellersChart">
+                                <!-- Will be populated by JavaScript -->
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal for adding/editing medicines -->
+    <div class="modal" id="medicineModal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h2>Add/Edit Medicine</h2>
+            <form id="medicineForm">
+                <div class="form-group">
+                    <label for="medicineName">Medicine Name</label>
+                    <input type="text" id="medicineName" required>
+                </div>
+                <div class="form-group">
+                    <label for="company">Company</label>
+                    <input type="text" id="company" required>
+                </div>
+                <div class="form-group">
+                    <label for="batch">Batch Number</label>
+                    <input type="text" id="batch" required>
+                </div>
+                <div class="form-group">
+                    <label for="stock">Stock Quantity</label>
+                    <input type="number" id="stock" required>
+                </div>
+                <div class="form-group">
+                    <label for="price">Price (₹)</label>
+                    <input type="number" id="price" step="0.01" required>
+                </div>
+                <div class="form-group">
+                    <label for="expiryDate">Expiry Date</label>
+                    <input type="date" id="expiryDate" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Save Medicine</button>
+            </form>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2026 Pharma Pulse. All rights reserved. | <a href="#">Privacy Policy</a> | <a href="#">Terms of Service</a></p>
+        </div>
+    </footer>
+
+    <script src="app.js"></script>
+    <script src="admin.js"></script>
+</body>
+</html>
