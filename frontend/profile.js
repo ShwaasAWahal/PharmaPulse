@@ -105,27 +105,44 @@ personalForm?.addEventListener('submit', (e) => {
 });
 
 // Password Management
-passwordForm?.addEventListener('submit', (e) => {
+passwordForm?.addEventListener('submit', async (e) => {
     e.preventDefault();
     
     const currentPassword = document.getElementById('currentPassword').value;
     const newPassword = document.getElementById('newPassword').value;
     const confirmPassword = document.getElementById('confirmPassword').value;
     
+    // Validation
     if (newPassword !== confirmPassword) {
-        alert('New passwords do not match!');
+        showNotification('New passwords do not match!', 'error');
         return;
     }
     
     if (newPassword.length < 8) {
-        alert('Password must be at least 8 characters long!');
+        showNotification('Password must be at least 8 characters long!', 'error');
+        return;
+    }
+
+    if (currentPassword === newPassword) {
+        showNotification('New password must be different from current password!', 'error');
         return;
     }
     
-    // In a real app, validate current password
-    localStorage.setItem('userPassword', newPassword);
-    passwordModal.classList.remove('active');
-    showNotification('Password updated successfully!');
+    // Submit to backend
+    try {
+        const response = await apiService.changePassword(currentPassword, newPassword);
+        
+        if (response.success) {
+            passwordModal.classList.remove('active');
+            passwordForm.reset();
+            showNotification('Password updated successfully!', 'success');
+        } else {
+            showNotification(response.message || 'Failed to update password', 'error');
+        }
+    } catch (error) {
+        console.error('Password change error:', error);
+        showNotification(error.message || 'Error updating password', 'error');
+    }
 });
 
 // Address Management
@@ -197,21 +214,27 @@ window.deleteAddress = function(addressId) {
 };
 
 // Notification Helper
-function showNotification(message) {
+function showNotification(message, type = 'success') {
     const notification = document.createElement('div');
+    const bgColor = type === 'error' ? '#E53E3E' : 'var(--primary-color)';
+    const icon = type === 'error' ? '✕' : '✓';
+    
     notification.style.cssText = `
         position: fixed;
         top: 100px;
         right: 20px;
-        background: var(--primary-color);
+        background: ${bgColor};
         color: white;
         padding: 1rem 1.5rem;
         border-radius: 8px;
         box-shadow: 0 10px 15px rgba(0,0,0,0.1);
         z-index: 999;
         animation: slide-in 0.3s ease-out;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
     `;
-    notification.textContent = message;
+    notification.innerHTML = `<span>${icon}</span><span>${message}</span>`;
     document.body.appendChild(notification);
     
     setTimeout(() => {
@@ -221,24 +244,66 @@ function showNotification(message) {
 }
 
 // Load saved profile data on page load
-document.addEventListener('DOMContentLoaded', () => {
-    const savedProfile = JSON.parse(localStorage.getItem('userProfile'));
-    
-    if (savedProfile) {
-        document.getElementById('fullName').value = savedProfile.fullName || 'John Doe';
-        document.getElementById('phone').value = savedProfile.phone || '+91 98765 43210';
-        document.getElementById('email').value = savedProfile.email || 'john@example.com';
-        document.getElementById('dob').value = savedProfile.dob || '1990-03-15';
+document.addEventListener('DOMContentLoaded', async () => {
+    // First, check if user is authenticated
+    if (!jwtManager.isAuthenticated()) {
+        window.location.href = 'login.html';
+        return;
+    }
+
+    // Try to load user data from backend
+    try {
+        const response = await apiService.getCurrentUser();
         
-        document.getElementById('displayName').textContent = savedProfile.fullName || 'John Doe';
-        document.getElementById('displayPhone').textContent = savedProfile.phone || '+91 98765 43210';
-        document.getElementById('displayEmail').textContent = savedProfile.email || 'john@example.com';
-        document.getElementById('displayDob').textContent = new Date(savedProfile.dob || '1990-03-15').toLocaleDateString('en-IN');
-        
-        document.getElementById('profileName').textContent = savedProfile.fullName || 'John Doe';
-        document.getElementById('profilePhone').textContent = savedProfile.phone || '+91 98765 43210';
+        if (response.success && response.user) {
+            // Store the complete user data
+            const userData = response.user;
+            localStorage.setItem('userProfile', JSON.stringify({
+                id: userData.id,
+                fullName: userData.full_name,
+                email: userData.email,
+                role: userData.role,
+                branch_id: userData.branch_id,
+                is_active: userData.is_active,
+                created_at: userData.created_at,
+                last_login: userData.last_login
+            }));
+
+            // Display user data
+            displayUserProfile(userData);
+        }
+    } catch (error) {
+        console.error('Error loading user profile:', error);
+        // Use cached profile if available
+        const savedProfile = JSON.parse(localStorage.getItem('userProfile'));
+        if (savedProfile) {
+            displayUserProfile(savedProfile);
+        }
     }
 });
+
+/**
+ * Display user profile information
+ */
+function displayUserProfile(userData) {
+    if (!userData) return;
+
+    // Update form fields
+    document.getElementById('fullName').value = userData.full_name || userData.fullName || '';
+    document.getElementById('email').value = userData.email || '';
+    document.getElementById('phone').value = userData.phone || '';
+    document.getElementById('dob').value = userData.dob || '';
+    
+    // Update display fields
+    document.getElementById('displayName').textContent = userData.full_name || userData.fullName || 'User';
+    document.getElementById('displayPhone').textContent = userData.phone || 'Not set';
+    document.getElementById('displayEmail').textContent = userData.email || '';
+    document.getElementById('displayDob').textContent = userData.dob ? new Date(userData.dob).toLocaleDateString('en-IN') : 'Not set';
+    
+    // Update header
+    document.getElementById('profileName').textContent = userData.full_name || userData.fullName || 'User';
+    document.getElementById('profilePhone').textContent = userData.phone || 'Not set';
+}
 
 // Preferences
 const emailNotif = document.getElementById('emailNotif');

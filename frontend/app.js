@@ -1,6 +1,95 @@
 // PHARMA PULSE - MAIN APPLICATION
 
+// ============================================
+// IMMEDIATE AUTHENTICATION CHECK
+// ============================================
+// This runs immediately when the script loads, before DOM is ready
+// Ensures users are redirected to login ASAP if not authenticated
+
+(function() {
+    // Get the current page
+    const currentPage = window.location.pathname.split('/').pop() || 'index.html';
+    
+    // List of pages that require authentication
+    const protectedPages = ['index.html', 'cart.html', 'orders.html', 'profile.html', 'admin.html', ''];
+    
+    // List of pages that don't require authentication
+    const publicPages = ['login.html'];
+    
+    // If it's a protected page and user is not authenticated, redirect immediately
+    if (protectedPages.includes(currentPage) && !publicPages.includes(currentPage)) {
+        if (typeof jwtManager !== 'undefined' && !jwtManager.isAuthenticated()) {
+            // Redirect to login immediately
+            window.location.href = 'login.html';
+            // Stop further execution
+            throw new Error('User not authenticated - redirecting to login');
+        }
+    }
+})();
+
+// ============================================
+// AUTHENTICATION UTILITIES
+// ============================================
+
+
+/**
+ * Logout user and redirect to login page
+ */
+function logout() {
+    if (apiService) {
+        apiService.logout();
+    } else {
+        jwtManager.clearTokens();
+    }
+    window.location.href = 'login.html';
+}
+
+/**
+ * Get current user info
+ */
+function getCurrentUserInfo() {
+    const userData = jwtManager.getUserData();
+    return userData || null;
+}
+
+/**
+ * Update navbar with user information
+ */
+async function updateNavbarWithUserInfo() {
+    const navLinks = document.querySelector('.nav-links');
+    if (!navLinks) return;
+
+    try {
+        // Get user data from backend
+        const response = await apiService.getCurrentUser();
+        
+        if (response.success && response.user) {
+            const user = response.user;
+            
+            // Create simple user info with logout button
+            let userMenuHTML = `
+                <div class="user-info-section">
+                    <span class="user-label">👤 ${user.full_name || user.email}</span>
+                    <button class="logout-btn" onclick="logout()">🚪 Logout</button>
+                </div>
+            `;
+            
+            // Remove existing user menu if any
+            const existingUserMenu = navLinks.querySelector('.user-info-section');
+            if (existingUserMenu) {
+                existingUserMenu.remove();
+            }
+            
+            // Add new user menu
+            navLinks.insertAdjacentHTML('beforeend', userMenuHTML);
+        }
+    } catch (error) {
+        console.error('Error updating navbar:', error);
+    }
+}
+
 // Medicine Database
+
 const medicinesDatabase = [
     {
         id: 1,
@@ -555,9 +644,16 @@ function initOrdersPage() {
 }
 
 // Initialize the page based on current location
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+    // Note: Authentication check is done immediately when script loads (see top of file)
+    // If user is not authenticated, they're redirected before this event fires
+    
     const currentPage = window.location.pathname.split('/').pop() || 'index.html';
     
+    // Update navbar with user info (now running on authenticated pages only)
+    await updateNavbarWithUserInfo();
+    
+    // Initialize page-specific functionality
     switch (currentPage) {
         case 'index.html':
         case '':

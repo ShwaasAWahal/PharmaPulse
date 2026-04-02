@@ -168,6 +168,59 @@ html {
 }
 
 /* ==============================
+   USER INFO SECTION
+   ============================== */
+
+.user-info-section {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-left: 20px;
+    padding-left: 20px;
+    border-left: 1px solid var(--border-color);
+}
+
+.user-label {
+    color: var(--text-dark);
+    font-weight: 600;
+    font-size: 0.9rem;
+    white-space: nowrap;
+}
+
+.logout-btn {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 6px !important;
+    padding: 8px 16px !important;
+    background: #EF4444 !important;
+    color: white !important;
+    border: 2px solid #EF4444 !important;
+    border-radius: 6px !important;
+    font-family: inherit !important;
+    font-weight: 600 !important;
+    font-size: 0.9rem !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+    box-shadow: 0 2px 4px rgba(239, 68, 68, 0.2) !important;
+    outline: none !important;
+}
+
+.logout-btn:hover {
+    background: #DC2626 !important;
+    border-color: #DC2626 !important;
+    box-shadow: 0 4px 8px rgba(239, 68, 68, 0.3) !important;
+}
+
+.logout-btn:active {
+    transform: scale(0.98) !important;
+}
+
+.logout-btn:focus {
+    outline: none !important;
+}
+
+/* ==============================
    HERO SECTION
    ============================== */
 

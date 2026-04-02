@@ -309,9 +309,9 @@ html, body {
     pointer-events: none;
 }
 
-.phone-input {
+/* .phone-input {
     padding-left: 60px;
-}
+} */
 
 .input-icon {
     position: absolute;
@@ -345,8 +345,8 @@ html, body {
 
 .form-actions {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 14px;
+    /* grid-template-columns: 1fr 1fr; */
+    /* gap: 14px; */
     margin-top: 8px;
     animation: fadeIn 0.6s ease-out 0.7s both;
 }

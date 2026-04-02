@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pharma Pulse - Login</title>
-    <link rel="stylesheet" href="./style.css">
+    <link rel="stylesheet" href="./css/login.css">
 </head>
 <body>
     <div class="container">
@@ -52,42 +52,39 @@
                     <p>Sign in to your account</p>
                 </div>
 
-                <form id="loginForm" class="login-form">
+                <form id="loginForm" class="login-form" action="index.html">
                     <!-- Name Field -->
                     <div class="form-group">
-                        <label for="name" class="form-label">Full Name</label>
+                        <label for="email" class="form-label">Email</label>
                         <div class="input-wrapper">
                             <input 
                                 type="text" 
-                                id="name" 
-                                name="name" 
-                                placeholder="Enter your full name"
+                                id="email" 
+                                name="email" 
+                                placeholder="Enter your email address"
                                 required
                                 class="form-input"
                             >
-                            <span class="input-icon">👤</span>
+                            <span class="input-icon">✉︎</span>
                         </div>
-                        <span class="error-message" id="nameError"></span>
+                        <span class="error-message" id="emailError"></span>
                     </div>
 
-                    <!-- Phone Number Field -->
+                    <!-- Password Field -->
                     <div class="form-group">
-                        <label for="phone" class="form-label">Phone Number</label>
+                        <label for="phone" class="form-label">Password</label>
                         <div class="input-wrapper">
-                            <div class="country-code">+91</div>
                             <input 
-                                type="tel" 
-                                id="phone" 
-                                name="phone" 
-                                placeholder="Enter your 10-digit number"
-                                maxlength="10"
+                                type="text" 
+                                id="password" 
+                                name="password" 
+                                placeholder="Enter your Password"
                                 required
-                                class="form-input phone-input"
-                                pattern="[0-9]{10}"
+                                class="form-input"
                             >
                             <span class="input-icon">📱</span>
                         </div>
-                        <span class="error-message" id="phoneError"></span>
+                        <span class="error-message" id="passwordError"></span>
                     </div>
 
                     <!-- Form Actions -->
@@ -96,9 +93,9 @@
                             <span class="btn-text">Login</span>
                             <span class="btn-icon">→</span>
                         </button>
-                        <a href="#" class="btn btn-signup">
+                        <!-- <a href="#" class="btn btn-signup">
                             <span class="btn-text">Create Account</span>
-                        </a>
+                        </a> -->
                     </div>
                 </form>
 
@@ -119,6 +116,8 @@
         </div>
     </div>
 
-    <script src="script.js"></script>
+    <script src="jwt_utils.js"></script>
+    <script src="api-service.js"></script>
+    <script src="login.js"></script>
 </body>
 </html>
