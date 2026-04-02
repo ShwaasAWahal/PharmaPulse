@@ -1,6 +1,7 @@
 import logging
 import os
 from flask import Flask, jsonify
+from flask_cors import CORS
 
 from config import get_config
 from extensions import jwt, mail
@@ -18,6 +19,7 @@ logger = logging.getLogger(__name__)
 
 def create_app(config=None):
     app = Flask(__name__)
+    CORS(app)
 
     # ── Config ─────────────────────────────────────────────────────────────────
     app.config.from_object(config or get_config())
