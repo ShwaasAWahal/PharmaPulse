@@ -177,6 +177,186 @@ class APIService {
         jwtManager.clearTokens();
         return Promise.resolve({ success: true, message: "Logged out successfully" });
     }
+
+    // ─────────────────────────────────────────────────────────────
+    // MEDICINES ENDPOINTS
+    // ─────────────────────────────────────────────────────────────
+
+    /**
+     * List all medicines with search and pagination
+     */
+    async listMedicines(page = 1, perPage = 20, search = '', category = '', supplierId = null) {
+        let query = `?page=${page}&per_page=${perPage}`;
+        if (search) query += `&q=${encodeURIComponent(search)}`;
+        if (category) query += `&category=${encodeURIComponent(category)}`;
+        if (supplierId) query += `&supplier_id=${supplierId}`;
+        return await this.request(`/medicines${query}`, {
+            method: 'GET'
+        });
+    }
+
+    /**
+     * Get a specific medicine by ID
+     */
+    async getMedicine(medicineId, includeInventory = false) {
+        let query = `?include_inventory=${includeInventory.toString()}`;
+        return await this.request(`/medicines/${medicineId}${query}`, {
+            method: 'GET'
+        });
+    }
+
+    /**
+     * Add a new medicine (admin/pharmacist only)
+     */
+    async addMedicine(medicineData) {
+        return await this.request('/medicines', {
+            method: 'POST',
+            body: medicineData
+        });
+    }
+
+    /**
+     * Update medicine (admin/pharmacist only)
+     */
+    async updateMedicine(medicineId, medicineData) {
+        return await this.request(`/medicines/${medicineId}`, {
+            method: 'PUT',
+            body: medicineData
+        });
+    }
+
+    /**
+     * Deactivate medicine (admin/pharmacist only)
+     */
+    async deactivateMedicine(medicineId) {
+        return await this.request(`/medicines/${medicineId}`, {
+            method: 'DELETE'
+        });
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // INVENTORY ENDPOINTS
+    // ─────────────────────────────────────────────────────────────
+
+    /**
+     * List inventory with filters and pagination
+     */
+    async listInventory(page = 1, perPage = 20, branchId = null, medicineId = null, includeExpired = true, lowStockOnly = false) {
+        let query = `?page=${page}&per_page=${perPage}&include_expired=${includeExpired}&low_stock_only=${lowStockOnly}`;
+        if (branchId) query += `&branch_id=${branchId}`;
+        if (medicineId) query += `&medicine_id=${medicineId}`;
+        return await this.request(`/inventory${query}`, {
+            method: 'GET'
+        });
+    }
+
+    /**
+     * Get specific inventory item
+     */
+    async getInventoryItem(inventoryId) {
+        return await this.request(`/inventory/${inventoryId}`, {
+            method: 'GET'
+        });
+    }
+
+    /**
+     * Add inventory batch
+     */
+    async addInventory(inventoryData) {
+        return await this.request('/inventory', {
+            method: 'POST',
+            body: inventoryData
+        });
+    }
+
+    /**
+     * Update inventory item
+     */
+    async updateInventory(inventoryId, inventoryData) {
+        return await this.request(`/inventory/${inventoryId}`, {
+            method: 'PUT',
+            body: inventoryData
+        });
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // BILLING/ORDERS ENDPOINTS
+    // ─────────────────────────────────────────────────────────────
+
+    /**
+     * Create a new bill/order
+     */
+    async createBill(billData) {
+        return await this.request('/billing/bills', {
+            method: 'POST',
+            body: billData
+        });
+    }
+
+    /**
+     * List bills with pagination and filters
+     */
+    async listBills(page = 1, perPage = 20, branchId = null, fromDate = null, toDate = null) {
+        let query = `?page=${page}&per_page=${perPage}`;
+        if (branchId) query += `&branch_id=${branchId}`;
+        if (fromDate) query += `&from_date=${fromDate}`;
+        if (toDate) query += `&to_date=${toDate}`;
+        return await this.request(`/billing/bills${query}`, {
+            method: 'GET'
+        });
+    }
+
+    /**
+     * Get a specific bill
+     */
+    async getBill(saleId) {
+        return await this.request(`/billing/bills/${saleId}`, {
+            method: 'GET'
+        });
+    }
+
+    /**
+     * Get invoice JSON for a bill
+     */
+    async getInvoiceJSON(saleId) {
+        return await this.request(`/billing/bills/${saleId}/invoice`, {
+            method: 'GET'
+        });
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // ANALYTICS ENDPOINTS
+    // ─────────────────────────────────────────────────────────────
+
+    /**
+     * Get sales analytics
+     */
+    async getSalesAnalytics(period = 'monthly', fromDate = null, toDate = null) {
+        let query = `?period=${period}`;
+        if (fromDate) query += `&from_date=${fromDate}`;
+        if (toDate) query += `&to_date=${toDate}`;
+        return await this.request(`/analytics/sales${query}`, {
+            method: 'GET'
+        });
+    }
+
+    /**
+     * Get inventory analytics
+     */
+    async getInventoryAnalytics() {
+        return await this.request('/analytics/inventory', {
+            method: 'GET'
+        });
+    }
+
+    /**
+     * Get expiry analytics
+     */
+    async getExpiryAnalytics(daysThreshold = 30) {
+        return await this.request(`/analytics/expiry?days_threshold=${daysThreshold}`, {
+            method: 'GET'
+        });
+    }
 }
 
 // Create global instance

@@ -1,4 +1,4 @@
-// PHARMA PULSE - ADMIN DASHBOARD
+// PHARMA PULSE - ADMIN DASHBOARD - BACKEND INTEGRATED
 
 // Sidebar Navigation
 const sidebarLinks = document.querySelectorAll('.sidebar-link');
@@ -43,14 +43,15 @@ const closeModals = document.querySelectorAll('.close-modal');
 
 if (addMedicineBtn) {
     addMedicineBtn.addEventListener('click', () => {
-        medicineForm.reset();
-        medicineModal.classList.add('active');
+        if (medicineForm) medicineForm.reset();
+        if (medicineModal) medicineModal.classList.add('active');
     });
 }
 
 closeModals.forEach(btn => {
     btn.addEventListener('click', (e) => {
-        e.target.closest('.modal').classList.remove('active');
+        const modal = e.target.closest('.modal');
+        if (modal) modal.classList.remove('active');
     });
 });
 
@@ -81,7 +82,7 @@ function getStockStatus(stock) {
     return { status: 'ok', badge: 'status-ok', text: 'IN STOCK' };
 }
 
-function displayInventory() {
+async function displayInventory() {
     const table = document.getElementById('inventoryTable');
     const totalMedicines = document.getElementById('totalMedicines');
     const lowStock = document.getElementById('lowStock');
@@ -90,217 +91,287 @@ function displayInventory() {
 
     if (!table) return;
 
-    let lowStockCount = 0;
-    let outOfStockCount = 0;
-    let expiringCount = 0;
-
-    table.innerHTML = medicinesDatabase.map(medicine => {
-        const stockStatus = getStockStatus(medicine.stock);
-        const expiryStatus = getExpiryStatus(medicine.expiryDate);
+    try {
+        // Fetch inventory from backend API
+        const response = await apiService.listInventory(1, 100);
         
-        // Update counters
-        if (stockStatus.status === 'low') lowStockCount++;
-        if (stockStatus.status === 'out-of-stock') outOfStockCount++;
-        if (expiryStatus.status !== 'ok') expiringCount++;
+        if (!response.success || !response.inventory) {
+            console.warn('Failed to fetch inventory:', response);
+            table.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 2rem; color: var(--text-red);">Error loading inventory. Backend may not be running.</td></tr>';
+            return;
+        }
 
-        return `
-            <tr>
-                <td><strong>${medicine.name}</strong></td>
-                <td>${medicine.company}</td>
-                <td>${medicine.batch}</td>
-                <td>${medicine.stock}</td>
-                <td>₹${medicine.price.toFixed(2)}</td>
-                <td>${formatDate(medicine.expiryDate)}</td>
-                <td>
-                    <span class="status-badge ${expiryStatus.badge}">${expiryStatus.text}</span>
-                </td>
-                <td>
-                    <button class="btn btn-secondary" style="font-size: 0.8rem; padding: 0.4rem 0.8rem;" onclick="editMedicine(${medicine.id})">Edit</button>
-                </td>
-            </tr>
-        `;
-    }).join('');
+        const inventory = response.inventory || [];
+        let lowStockCount = 0;
+        let outOfStockCount = 0;
+        let expiringCount = 0;
+        let totalCount = 0;
 
-    // Update stats
-    if (totalMedicines) totalMedicines.textContent = medicinesDatabase.length;
-    if (lowStock) lowStock.textContent = lowStockCount;
-    if (outOfStock) outOfStock.textContent = outOfStockCount;
-    if (expiringSoon) expiringSoon.textContent = expiringCount;
+        table.innerHTML = inventory.map(item => {
+            const medicine = item.medicine || {};
+            const stock = item.quantity || 0;
+            const expiryDate = item.expiry_date || item.expiryDate || new Date().toISOString().split('T')[0];
+            
+            const stockStatus = getStockStatus(stock);
+            const expiryStatus = getExpiryStatus(expiryDate);
+            
+            // Update counters
+            if (stockStatus.status === 'low') lowStockCount++;
+            if (stockStatus.status === 'out-of-stock') outOfStockCount++;
+            if (expiryStatus.status !== 'ok') expiringCount++;
+            totalCount++;
+
+            return `
+                <tr>
+                    <td><strong>${medicine.name || 'N/A'}</strong></td>
+                    <td>${medicine.brand || 'N/A'}</td>
+                    <td>${item.batch_number || 'N/A'}</td>
+                    <td>${stock}</td>
+                    <td>₹${(item.selling_price || 0).toFixed(2)}</td>
+                    <td>${formatDate(expiryDate)}</td>
+                    <td>
+                        <span class="status-badge ${expiryStatus.badge}">${expiryStatus.text}</span>
+                    </td>
+                    <td>
+                        <button class="btn btn-secondary" style="font-size: 0.8rem; padding: 0.4rem 0.8rem;" onclick="editInventoryItem(${item.id})">Edit</button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+
+        // Update stats
+        if (totalMedicines) totalMedicines.textContent = totalCount;
+        if (lowStock) lowStock.textContent = lowStockCount;
+        if (outOfStock) outOfStock.textContent = outOfStockCount;
+        if (expiringSoon) expiringSoon.textContent = expiringCount;
+
+    } catch (error) {
+        console.error('Error fetching inventory:', error);
+        table.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 2rem; color: var(--text-red);">⚠️ Error loading inventory from backend</td></tr>';
+        // MANUAL ACTION: Ensure backend is running on http://localhost:5000
+    }
 }
 
-function editMedicine(medicineId) {
-    const medicine = medicinesDatabase.find(m => m.id === medicineId);
-    if (!medicine) return;
-
-    // Populate form
-    document.getElementById('medicineName').value = medicine.name;
-    document.getElementById('company').value = medicine.company;
-    document.getElementById('batch').value = medicine.batch;
-    document.getElementById('stock').value = medicine.stock;
-    document.getElementById('price').value = medicine.price;
-    document.getElementById('expiryDate').value = medicine.expiryDate;
-
-    medicineModal.classList.add('active');
+function editInventoryItem(inventoryId) {
+    // NOTE: Implement editing functionality based on API response
+    alert(`Edit inventory item ${inventoryId} - Feature coming soon`);
 }
 
-medicineForm?.addEventListener('submit', (e) => {
+medicineForm?.addEventListener('submit', async (e) => {
     e.preventDefault();
     
-    const name = document.getElementById('medicineName').value;
-    const company = document.getElementById('company').value;
-    const batch = document.getElementById('batch').value;
-    const stock = parseInt(document.getElementById('stock').value);
-    const price = parseFloat(document.getElementById('price').value);
-    const expiryDate = document.getElementById('expiryDate').value;
+    const name = document.getElementById('medicineName')?.value;
+    const company = document.getElementById('company')?.value;
+    const purchasePrice = parseFloat(document.getElementById('purchasePrice')?.value || 0);
+    const sellingPrice = parseFloat(document.getElementById('sellingPrice')?.value || 0);
+    const category = document.getElementById('category')?.value;
+    const genericName = document.getElementById('genericName')?.value;
 
-    // In a real app, this would update the database
-    alert(`Medicine "${name}" has been saved!`);
-    medicineModal.classList.remove('active');
-    displayInventory();
+    if (!name || !sellingPrice || !purchasePrice) {
+        showNotification('Please fill in required fields', 'error');
+        return;
+    }
+
+    try {
+        // NOTE: Backend may need to implement POST /medicines endpoint
+        const response = await apiService.addMedicine({
+            name: name,
+            brand: company,
+            purchase_price: purchasePrice,
+            selling_price: sellingPrice,
+            category: category,
+            generic_name: genericName
+        });
+
+        if (response.success) {
+            showNotification('Medicine added successfully!', 'success');
+            if (medicineModal) medicineModal.classList.remove('active');
+            medicineForm.reset();
+            displayInventory();
+        } else {
+            showNotification(response.message || 'Failed to add medicine', 'error');
+        }
+    } catch (error) {
+        console.error('Error adding medicine:', error);
+        showNotification('Note: Backend may not support adding medicines yet. ' + error.message, 'error');
+        // MANUAL ACTION: Ensure backend implements POST /medicines endpoint
+    }
 });
 
 // Expiry Date Tracking
-function displayExpiryTracking() {
+async function displayExpiryTracking() {
     const timeline = document.getElementById('expiryTimeline');
     const expiryRange = document.getElementById('expiryRange');
 
     if (!timeline) return;
 
-    function updateTimeline() {
-        const range = parseInt(expiryRange?.value || 30);
-        const today = new Date();
-        
-        // Sort medicines by expiry date
-        const sorted = [...medicinesDatabase]
-            .filter(medicine => {
-                const expiry = new Date(medicine.expiryDate);
-                const daysLeft = Math.ceil((expiry - today) / (1000 * 60 * 60 * 24));
-                return range === 0 || daysLeft <= range;
-            })
-            .sort((a, b) => new Date(a.expiryDate) - new Date(b.expiryDate));
-
-        timeline.innerHTML = sorted.map(medicine => {
-            const expiry = new Date(medicine.expiryDate);
-            const daysLeft = Math.ceil((expiry - today) / (1000 * 60 * 60 * 24));
-            let riskClass = 'normal';
+    async function updateTimeline() {
+        try {
+            const range = parseInt(expiryRange?.value || 30);
+            const response = await apiService.getExpiryAnalytics(range);
             
-            if (daysLeft < 0) riskClass = 'critical';
-            else if (daysLeft <= 15) riskClass = 'critical';
-            else if (daysLeft <= 30) riskClass = 'warning';
+            if (response.success && response.expiring_items) {
+                const sorted = response.expiring_items;
+                const today = new Date();
 
-            return `
-                <div class="expiry-card ${riskClass}">
-                    <div class="expiry-header">
-                        <div>
-                            <h4>${medicine.name}</h4>
-                            <p style="font-size: 0.9rem; color: var(--text-gray);">${medicine.company} | Batch: ${medicine.batch}</p>
-                        </div>
-                        <div>
-                            <div class="expiry-date">${formatDate(medicine.expiryDate)}</div>
-                            <div class="days-left">${daysLeft < 0 ? 'EXPIRED' : daysLeft + ' days left'}</div>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }).join('');
+                timeline.innerHTML = sorted.map(item => {
+                    const medicine = item.medicine || {};
+                    const expiryDate = item.expiry_date || new Date().toISOString().split('T')[0];
+                    const expiry = new Date(expiryDate);
+                    const daysLeft = Math.ceil((expiry - today) / (1000 * 60 * 60 * 24));
+                    let riskClass = 'normal';
+                    
+                    if (daysLeft < 0) riskClass = 'critical';
+                    else if (daysLeft <= 15) riskClass = 'critical';
+                    else if (daysLeft <= 30) riskClass = 'warning';
 
-        if (sorted.length === 0) {
-            timeline.innerHTML = '<p style="text-align: center; padding: 2rem; color: var(--text-gray);">No medicines in this range</p>';
+                    return `
+                        <div class="expiry-card ${riskClass}">
+                            <div class="expiry-header">
+                                <div>
+                                    <h4>${medicine.name || 'Unknown'}</h4>
+                                    <p style="font-size: 0.9rem; color: var(--text-gray);">${medicine.brand || 'N/A'} | Batch: ${item.batch_number || 'N/A'}</p>
+                                </div>
+                                <div>
+                                    <div class="expiry-date">${formatDate(expiryDate)}</div>
+                                    <div class="days-left">${daysLeft < 0 ? 'EXPIRED' : daysLeft + ' days left'}</div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+                if (sorted.length === 0) {
+                    timeline.innerHTML = '<p style="text-align: center; padding: 2rem; color: var(--text-gray);">No medicines in this range</p>';
+                }
+            } else {
+                // Fallback to local database
+                throw new Error('API not available');
+            }
+        } catch (error) {
+            console.error('Error fetching expiry data:', error);
+            // MANUAL ACTION: Check if backend implements GET /analytics/expiry endpoint
+            timeline.innerHTML = '<p style="text-align: center; padding: 2rem; color: var(--text-red);">⚠️ Error loading expiry data from backend</p>';
         }
     }
 
     expiryRange?.addEventListener('change', updateTimeline);
-    updateTimeline();
+    await updateTimeline();
 }
 
 // Orders Management
-function displayOrdersManagement() {
+async function displayOrdersManagement() {
     const table = document.getElementById('ordersTable');
     const orderStatus = document.getElementById('orderStatus');
 
     if (!table) return;
 
-    function updateOrders() {
-        const selectedStatus = orderStatus?.value || '';
-        const filtered = selectedStatus 
-            ? orderDatabase.filter(order => order.status === selectedStatus)
-            : orderDatabase;
+    async function updateOrders() {
+        try {
+            const selectedStatus = orderStatus?.value || '';
+            const response = await apiService.listBills(1, 100);
 
-        table.innerHTML = filtered.map(order => {
-            const itemsText = order.items.map(item => item.name).join(', ');
-            const statusClass = `order-status ${order.status}`;
-            
-            return `
-                <tr>
-                    <td><strong>${order.id}</strong></td>
-                    <td>Customer Name</td>
-                    <td>${itemsText}</td>
-                    <td>₹${order.totalAmount.toFixed(2)}</td>
-                    <td><span class="${statusClass}">${order.status.toUpperCase()}</span></td>
-                    <td>${formatDate(order.date)}</td>
-                    <td>
-                        <button class="btn btn-secondary" style="font-size: 0.8rem; padding: 0.4rem 0.8rem;" onclick="alert('Update order status')">Update</button>
-                    </td>
-                </tr>
-            `;
-        }).join('');
+            if (response.success && response.bills) {
+                const bills = response.bills;
+                let filtered = bills;
+
+                if (selectedStatus) {
+                    filtered = bills.filter(bill => bill.status === selectedStatus);
+                }
+
+                table.innerHTML = filtered.map(bill => {
+                    const itemsText = (bill.items || []).map(item => item.medicine ? item.medicine.name : 'Item').join(', ');
+                    const statusClass = `order-status ${bill.status}`;
+                    
+                    return `
+                        <tr>
+                            <td><strong>ORD${bill.id}</strong></td>
+                            <td>${bill.customer_name || 'Walk-in Customer'}</td>
+                            <td>${itemsText || 'No items'}</td>
+                            <td>₹${(bill.grand_total || 0).toFixed(2)}</td>
+                            <td><span class="${statusClass}">${(bill.status || 'pending').toUpperCase()}</span></td>
+                            <td>${formatDate(bill.created_at || new Date().toISOString().split('T')[0])}</td>
+                            <td>
+                                <button class="btn btn-secondary" style="font-size: 0.8rem; padding: 0.4rem 0.8rem;" onclick="alert('Order status update not available')">View</button>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+
+                if (filtered.length === 0) {
+                    table.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 2rem; color: var(--text-gray);">No orders found</td></tr>';
+                }
+            } else {
+                throw new Error('Failed to fetch bills');
+            }
+        } catch (error) {
+            console.error('Error fetching orders:', error);
+            table.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 2rem; color: var(--text-red);">⚠️ Error loading bills from backend</td></tr>';
+        }
     }
 
     orderStatus?.addEventListener('change', updateOrders);
-    updateOrders();
+    await updateOrders();
 }
 
 // Analytics
-function displayAnalytics() {
+async function displayAnalytics() {
     const companySalesChart = document.getElementById('companySalesChart');
     const topSellersChart = document.getElementById('topSellersChart');
 
     if (!companySalesChart || !topSellersChart) return;
 
-    // Sales by Company
-    const companySales = {};
-    medicinesDatabase.forEach(medicine => {
-        companySales[medicine.company] = (companySales[medicine.company] || 0) + medicine.stock;
-    });
+    try {
+        // Fetch analytics from backend
+        const response = await apiService.getSalesAnalytics('monthly');
 
-    const companySalesHTML = Object.entries(companySales)
-        .map(([company, sales]) => {
-            const barWidth = (sales / Math.max(...Object.values(companySales))) * 100;
-            return `
-                <div style="margin-bottom: 1.5rem;">
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
-                        <strong>${company}</strong>
-                        <span style="color: var(--text-gray);">${sales} units</span>
-                    </div>
-                    <div style="background: var(--border-color); height: 24px; border-radius: 4px; overflow: hidden;">
-                        <div style="background: var(--primary-color); height: 100%; width: ${barWidth}%; transition: width 0.3s;"></div>
-                    </div>
-                </div>
-            `;
-        })
-        .join('');
+        if (response.success) {
+            // NOTE: Format analytics data based on backend response
+            // For now, show placeholder with backend note
+            companySalesChart.innerHTML = '<p style="color: var(--text-gray);">📊 Analytics data loading from backend...</p>';
+            topSellersChart.innerHTML = '<p style="color: var(--text-gray);">📊 Top sellers data loading from backend...</p>';
+        } else {
+            throw new Error('Analytics not available');
+        }
+    } catch (error) {
+        console.error('Error fetching analytics:', error);
+        companySalesChart.innerHTML = '<p style="color: var(--text-red);">⚠️ Analytics unavailable from backend</p>';
+        topSellersChart.innerHTML = '<p style="color: var(--text-red);">⚠️ Top sellers unavailable from backend</p>';
+        // MANUAL ACTION: Ensure backend implements GET /analytics/sales and related endpoints
+    }
+}
 
-    companySalesChart.innerHTML = companySalesHTML;
+// Initialize dashboard on page load
+document.addEventListener('DOMContentLoaded', () => {
+    displayInventory();
+});
 
-    // Top 5 Best Sellers
-    const topSellers = [...medicinesDatabase]
-        .sort((a, b) => b.stock - a.stock)
-        .slice(0, 5);
-
-    const topSellersHTML = topSellers
-        .map((medicine, index) => `
-            <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; border-bottom: 1px solid var(--border-color);">
-                <div>
-                    <div style="font-weight: 600;">#${index + 1} ${medicine.name}</div>
-                    <div style="font-size: 0.9rem; color: var(--text-gray);">${medicine.company}</div>
-                </div>
-                <div style="font-weight: 700; color: var(--primary-color); font-size: 1.2rem;">${medicine.stock}</div>
-            </div>
-        `)
-        .join('');
+// Helper to show notifications
+function showNotification(message, type = 'info') {
+    const notification = document.createElement('div');
+    const bgColor = type === 'error' ? '#e53e3e' : type === 'success' ? '#48bb78' : '#4299e1';
+    
+    notification.style.cssText = `
+        position: fixed;
+        top: 100px;
+        right: 20px;
+        background: ${bgColor};
+        color: white;
+        padding: 1rem 1.5rem;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        z-index: 999;
+        max-width: 300px;
+    `;
+    notification.textContent = message;
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        notification.remove();
+    }, 4000);
+}
 
     topSellersChart.innerHTML = topSellersHTML;
-}
 
 // Format Date Helper
 function formatDate(dateStr) {

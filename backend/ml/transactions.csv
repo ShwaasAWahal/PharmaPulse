@@ -1,0 +1,11 @@
+transaction_id,items
+1,Paracetamol|Vitamin C|Crocin
+2,Paracetamol|Aspirin
+3,Vitamin C|Crocin
+4,Paracetamol|Vitamin C
+5,Aspirin|Crocin
+6,Paracetamol|Crocin
+7,Vitamin C|Aspirin
+8,Paracetamol|Vitamin C|Aspirin
+9,Crocin|Vitamin C
+10,Paracetamol|Crocin|Aspirin

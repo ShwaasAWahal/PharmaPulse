@@ -1,203 +1,310 @@
-// PHARMA PULSE - PROFILE PAGE
+// ============================================
+// PROFILE PAGE FUNCTIONALITY - BACKEND INTEGRATED
+// ============================================
 
-// Profile Navigation
-const profileNavLinks = document.querySelectorAll('.profile-nav-link');
-const profileSections = document.querySelectorAll('.profile-section');
+// Global user profile data
+let currentUserProfile = null;
 
-profileNavLinks.forEach(link => {
-    link.addEventListener('click', (e) => {
-        e.preventDefault();
-        const sectionName = link.dataset.section;
-        
-        // Remove active class from all links
-        profileNavLinks.forEach(l => l.classList.remove('active'));
-        link.classList.add('active');
-        
-        // Hide all sections
-        profileSections.forEach(section => section.classList.remove('active'));
-        
-        // Show selected section
-        const section = document.getElementById(`${sectionName}-section`);
-        if (section) {
-            section.classList.add('active');
-        }
-        
-        // Initialize section data
-        if (sectionName === 'addresses') {
-            displayAddresses();
-        }
-    });
+// Initialize profile page
+document.addEventListener('DOMContentLoaded', async () => {
+    // Load user profile from backend
+    await loadUserProfile();
+    initializeProfileUI();
 });
 
-// Modal Management
-const passwordModal = document.getElementById('passwordModal');
-const changePasswordBtn = document.getElementById('changePasswordBtn');
-const passwordForm = document.getElementById('passwordForm');
-const closeModals = document.querySelectorAll('.close-modal');
-
-if (changePasswordBtn) {
-    changePasswordBtn.addEventListener('click', () => {
-        passwordForm.reset();
-        passwordModal.classList.add('active');
-    });
-}
-
-closeModals.forEach(btn => {
-    btn.addEventListener('click', (e) => {
-        e.target.closest('.modal').classList.remove('active');
-    });
-});
-
-window.addEventListener('click', (e) => {
-    if (e.target.classList.contains('modal')) {
-        e.target.classList.remove('active');
-    }
-});
-
-// Personal Information Management
-const editPersonalBtn = document.getElementById('editPersonalBtn');
-const personalDisplay = document.getElementById('personalDisplay');
-const personalForm = document.getElementById('personalForm');
-const cancelPersonalBtn = document.getElementById('cancelPersonalBtn');
-
-if (editPersonalBtn) {
-    editPersonalBtn.addEventListener('click', () => {
-        personalDisplay.style.display = 'none';
-        personalForm.style.display = 'block';
-    });
-}
-
-if (cancelPersonalBtn) {
-    cancelPersonalBtn.addEventListener('click', () => {
-        personalDisplay.style.display = 'block';
-        personalForm.style.display = 'none';
-    });
-}
-
-personalForm?.addEventListener('submit', (e) => {
-    e.preventDefault();
-    
-    // Update display values
-    const fullName = document.getElementById('fullName').value;
-    const phone = document.getElementById('phone').value;
-    const email = document.getElementById('email').value;
-    const dob = document.getElementById('dob').value;
-    
-    document.getElementById('displayName').textContent = fullName;
-    document.getElementById('displayPhone').textContent = phone;
-    document.getElementById('displayEmail').textContent = email;
-    document.getElementById('displayDob').textContent = new Date(dob).toLocaleDateString('en-IN');
-    
-    document.getElementById('profileName').textContent = fullName;
-    document.getElementById('profilePhone').textContent = phone;
-    
-    // Save to localStorage
-    localStorage.setItem('userProfile', JSON.stringify({
-        fullName,
-        phone,
-        email,
-        dob
-    }));
-    
-    personalDisplay.style.display = 'block';
-    personalForm.style.display = 'none';
-    showNotification('Profile updated successfully!');
-});
-
-// Password Management
-passwordForm?.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    
-    const currentPassword = document.getElementById('currentPassword').value;
-    const newPassword = document.getElementById('newPassword').value;
-    const confirmPassword = document.getElementById('confirmPassword').value;
-    
-    // Validation
-    if (newPassword !== confirmPassword) {
-        showNotification('New passwords do not match!', 'error');
-        return;
-    }
-    
-    if (newPassword.length < 8) {
-        showNotification('Password must be at least 8 characters long!', 'error');
-        return;
-    }
-
-    if (currentPassword === newPassword) {
-        showNotification('New password must be different from current password!', 'error');
-        return;
-    }
-    
-    // Submit to backend
+/**
+ * Load user profile from backend API
+ */
+async function loadUserProfile() {
     try {
-        const response = await apiService.changePassword(currentPassword, newPassword);
+        const response = await apiService.getCurrentUser();
         
+        if (response.success && response.user) {
+            currentUserProfile = response.user;
+            displayUserProfile();
+            return true;
+        } else {
+            console.warn('Failed to load user profile:', response);
+            showNotification('Could not load profile information', 'error');
+            return false;
+        }
+    } catch (error) {
+        console.error('Error loading user profile:', error);
+        showNotification('Error: ' + error.message, 'error');
+        // NOTE: Ensure backend is running on http://localhost:5000
+        return false;
+    }
+}
+
+/**
+ * Display user profile in UI
+ */
+function displayUserProfile() {
+    if (!currentUserProfile) return;
+
+    // Update sidebar
+    const profileName = document.getElementById('profileName');
+    const profilePhone = document.getElementById('profilePhone');
+    if (profileName) profileName.textContent = currentUserProfile.full_name || 'User';
+    if (profilePhone) profilePhone.textContent = currentUserProfile.phone || '+91 XXXXXXXXXX';
+
+    // Update personal info display
+    const displayName = document.getElementById('displayName');
+    const displayPhone = document.getElementById('displayPhone');
+    const displayEmail = document.getElementById('displayEmail');
+    const displayDob = document.getElementById('displayDob');
+
+    if (displayName) displayName.textContent = currentUserProfile.full_name || 'N/A';
+    if (displayPhone) displayPhone.textContent = currentUserProfile.phone || 'N/A';
+    if (displayEmail) displayEmail.textContent = currentUserProfile.email || 'N/A';
+    if (displayDob) displayDob.textContent = currentUserProfile.date_of_birth || 'N/A';
+
+    // Populate form fields
+    populateProfileForm();
+}
+
+/**
+ * Populate profile form with current data
+ */
+function populateProfileForm() {
+    if (!currentUserProfile) return;
+
+    const fullNameInput = document.getElementById('fullName');
+    const phoneInput = document.getElementById('phone');
+    const emailInput = document.getElementById('email');
+    const dobInput = document.getElementById('dob');
+
+    if (fullNameInput) fullNameInput.value = currentUserProfile.full_name || '';
+    if (phoneInput) phoneInput.value = currentUserProfile.phone || '';
+    if (emailInput) emailInput.value = currentUserProfile.email || '';
+    if (dobInput) dobInput.value = currentUserProfile.date_of_birth || '';
+}
+
+/**
+ * Initialize profile page UI
+ */
+function initializeProfileUI() {
+    // Profile Navigation
+    const profileNavLinks = document.querySelectorAll('.profile-nav-link');
+    const profileSections = document.querySelectorAll('.profile-section');
+
+    profileNavLinks.forEach(link => {
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            const sectionName = link.dataset.section;
+            
+            // Remove active class from all links
+            profileNavLinks.forEach(l => l.classList.remove('active'));
+            link.classList.add('active');
+            
+            // Hide all sections
+            profileSections.forEach(section => section.classList.remove('active'));
+            
+            // Show selected section
+            const section = document.getElementById(`${sectionName}-section`);
+            if (section) {
+                section.classList.add('active');
+            }
+        });
+    });
+
+    // Personal Information Management
+    const editPersonalBtn = document.getElementById('editPersonalBtn');
+    const personalDisplay = document.getElementById('personalDisplay');
+    const personalForm = document.getElementById('personalForm');
+    const cancelPersonalBtn = document.getElementById('cancelPersonalBtn');
+
+    if (editPersonalBtn) {
+        editPersonalBtn.addEventListener('click', () => {
+            personalDisplay.style.display = 'none';
+            personalForm.style.display = 'block';
+            populateProfileForm();
+        });
+    }
+
+    if (cancelPersonalBtn) {
+        cancelPersonalBtn.addEventListener('click', () => {
+            personalDisplay.style.display = 'block';
+            personalForm.style.display = 'none';
+        });
+    }
+
+    // Personal Form Submission
+    personalForm?.addEventListener('submit', (e) => {
+        e.preventDefault();
+        savePersonalInfo();
+    });
+
+    // Password Management
+    const changePasswordBtn = document.getElementById('changePasswordBtn');
+    const passwordModal = document.getElementById('passwordModal');
+    const passwordForm = document.getElementById('passwordForm');
+    const closeModals = document.querySelectorAll('.close-modal');
+
+    if (changePasswordBtn && passwordModal) {
+        changePasswordBtn.addEventListener('click', () => {
+            if (passwordForm) passwordForm.reset();
+            passwordModal.classList.add('active');
+        });
+    }
+
+    closeModals.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const modal = e.target.closest('.modal');
+            if (modal) modal.classList.remove('active');
+        });
+    });
+
+    window.addEventListener('click', (e) => {
+        if (e.target.classList.contains('modal')) {
+            e.target.classList.remove('active');
+        }
+    });
+
+    // Password Form Submission
+    passwordForm?.addEventListener('submit', (e) => {
+        e.preventDefault();
+        changePassword();
+    });
+
+    // Addresses Section
+    const addressesNavLink = document.querySelector('[data-section="addresses"]');
+    if (addressesNavLink) {
+        addressesNavLink.addEventListener('click', () => {
+            displayAddresses();
+        });
+    }
+}
+
+/**
+ * Save personal information to backend
+ */
+async function savePersonalInfo() {
+    try {
+        const fullName = document.getElementById('fullName')?.value?.trim() || '';
+        const phone = document.getElementById('phone')?.value?.trim() || '';
+        const email = document.getElementById('email')?.value?.trim() || '';
+        const dob = document.getElementById('dob')?.value || '';
+
+        if (!fullName) {
+            showNotification('Full name is required', 'error');
+            return;
+        }
+
+        // Prepare update data
+        const updateData = {
+            full_name: fullName,
+            phone: phone,
+            email: email
+        };
+        
+        if (dob) {
+            updateData.date_of_birth = dob;
+        }
+
+        // NOTE: Backend may not have a dedicated update endpoint yet
+        // You may need to implement PUT /auth/me or PATCH /auth/users/:id
+        const response = await apiService.request('/auth/me', {
+            method: 'PUT',
+            body: updateData
+        });
+
         if (response.success) {
-            passwordModal.classList.remove('active');
-            passwordForm.reset();
+            currentUserProfile = { ...currentUserProfile, ...updateData };
+            displayUserProfile();
+            document.getElementById('personalDisplay').style.display = 'block';
+            document.getElementById('personalForm').style.display = 'none';
+            showNotification('Profile updated successfully!', 'success');
+        } else {
+            showNotification(response.message || 'Failed to update profile', 'error');
+        }
+    } catch (error) {
+        console.error('Error saving personal info:', error);
+        showNotification('Note: Backend may not support profile updates. ' + error.message, 'error');
+        // MANUAL ACTION: Implement PUT /auth/me endpoint in backend if not already present
+    }
+}
+
+/**
+ * Change password
+ */
+async function changePassword() {
+    try {
+        const currentPassword = document.getElementById('currentPassword')?.value || '';
+        const newPassword = document.getElementById('newPassword')?.value || '';
+        const confirmPassword = document.getElementById('confirmPassword')?.value || '';
+
+        // Validation
+        if (!currentPassword || !newPassword || !confirmPassword) {
+            showNotification('All password fields are required', 'error');
+            return;
+        }
+
+        if (newPassword.length < 8) {
+            showNotification('New password must be at least 8 characters', 'error');
+            return;
+        }
+
+        if (newPassword !== confirmPassword) {
+            showNotification('New passwords do not match', 'error');
+            return;
+        }
+
+        if (currentPassword === newPassword) {
+            showNotification('New password must be different from current password', 'error');
+            return;
+        }
+
+        const response = await apiService.changePassword(currentPassword, newPassword);
+
+        if (response.success) {
+            const passwordModal = document.getElementById('passwordModal');
+            if (passwordModal) passwordModal.classList.remove('active');
+            
+            const passwordForm = document.getElementById('passwordForm');
+            if (passwordForm) passwordForm.reset();
+            
             showNotification('Password updated successfully!', 'success');
         } else {
             showNotification(response.message || 'Failed to update password', 'error');
         }
     } catch (error) {
-        console.error('Password change error:', error);
-        showNotification(error.message || 'Error updating password', 'error');
+        console.error('Error changing password:', error);
+        showNotification('Error: ' + error.message, 'error');
     }
-});
+}
 
-// Address Management
+/**
+ * Display addresses
+ * NOTE: This requires backend support for addresses - currently not implemented
+ */
 function displayAddresses() {
     const addressesList = document.getElementById('addressesList');
     if (!addressesList) return;
 
-    const savedAddresses = JSON.parse(localStorage.getItem('userAddresses')) || [
-        {
-            id: 1,
-            type: 'Home',
-            address: '123 Main Street, Apartment 4B',
-            city: 'Delhi',
-            state: 'Delhi',
-            pincode: '110001',
-            phone: '+91 98765 43210',
-            default: true
-        },
-        {
-            id: 2,
-            type: 'Office',
-            address: '456 Business Park, Suite 200',
-            city: 'Gurgaon',
-            state: 'Haryana',
-            pincode: '122001',
-            phone: '+91 98765 43210',
-            default: false
-        }
-    ];
+    // MANUAL ACTION REQUIRED: Backend needs to implement:
+    // GET /auth/users/{id}/addresses - to fetch user addresses
+    // POST /auth/users/{id}/addresses - to add new address
+    // PUT /auth/users/{id}/addresses/{addressId} - to update address
+    // DELETE /auth/users/{id}/addresses/{addressId} - to delete address
 
-    addressesList.innerHTML = savedAddresses.map(addr => `
-        <div style="background: var(--bg-light); padding: 1.5rem; border-radius: 8px; margin-bottom: 1rem;">
-            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
-                <div>
-                    <h4 style="margin-bottom: 0.5rem;">${addr.type}${addr.default ? ' <span style="background: var(--primary-color); color: white; padding: 0.25rem 0.75rem; border-radius: 12px; font-size: 0.75rem; font-weight: 700;">DEFAULT</span>' : ''}</h4>
-                    <p style="margin-bottom: 0.5rem;">${addr.address}</p>
-                    <p style="margin-bottom: 0.5rem; color: var(--text-gray);">${addr.city}, ${addr.state} - ${addr.pincode}</p>
-                    <p style="color: var(--text-gray);">📞 ${addr.phone}</p>
-                </div>
-                <div style="display: flex; gap: 0.5rem;">
-                    <button class="btn btn-secondary" style="font-size: 0.8rem; padding: 0.5rem 1rem;" onclick="editAddress(${addr.id})">Edit</button>
-                    <button class="btn btn-danger" style="font-size: 0.8rem; padding: 0.5rem 1rem;" onclick="deleteAddress(${addr.id})">Delete</button>
-                </div>
-            </div>
+    addressesList.innerHTML = `
+        <div style="padding: 2rem; text-align: center; color: var(--text-gray);">
+            <p>📍 Address management is not yet configured.</p>
+            <p style="font-size: 0.9rem; margin-top: 1rem;">Backend needs to implement address endpoints:</p>
+            <ul style="text-align: left; display: inline-block; margin-top: 1rem; font-size: 0.85rem;">
+                <li>GET /auth/users/{id}/addresses</li>
+                <li>POST /auth/users/{id}/addresses</li>
+                <li>PUT /auth/users/{id}/addresses/{addressId}</li>
+                <li>DELETE /auth/users/{id}/addresses/{addressId}</li>
+            </ul>
         </div>
-    `).join('');
+    `;
 }
 
-const addAddressBtn = document.getElementById('addAddressBtn');
-if (addAddressBtn) {
-    addAddressBtn.addEventListener('click', () => {
-        const addressForm = prompt('Enter new address (JSON format):');
-        if (addressForm) {
-            showNotification('Address added successfully!');
-            displayAddresses();
+/**
+ * Show notification message
+ */
         }
     });
 }
@@ -243,104 +350,8 @@ function showNotification(message, type = 'success') {
     }, 3000);
 }
 
-// Load saved profile data on page load
+// Initialize on page load
 document.addEventListener('DOMContentLoaded', async () => {
-    // First, check if user is authenticated
-    if (!jwtManager.isAuthenticated()) {
-        window.location.href = 'login.html';
-        return;
-    }
-
-    // Try to load user data from backend
-    try {
-        const response = await apiService.getCurrentUser();
-        
-        if (response.success && response.user) {
-            // Store the complete user data
-            const userData = response.user;
-            localStorage.setItem('userProfile', JSON.stringify({
-                id: userData.id,
-                fullName: userData.full_name,
-                email: userData.email,
-                role: userData.role,
-                branch_id: userData.branch_id,
-                is_active: userData.is_active,
-                created_at: userData.created_at,
-                last_login: userData.last_login
-            }));
-
-            // Display user data
-            displayUserProfile(userData);
-        }
-    } catch (error) {
-        console.error('Error loading user profile:', error);
-        // Use cached profile if available
-        const savedProfile = JSON.parse(localStorage.getItem('userProfile'));
-        if (savedProfile) {
-            displayUserProfile(savedProfile);
-        }
-    }
-});
-
-/**
- * Display user profile information
- */
-function displayUserProfile(userData) {
-    if (!userData) return;
-
-    // Update form fields
-    document.getElementById('fullName').value = userData.full_name || userData.fullName || '';
-    document.getElementById('email').value = userData.email || '';
-    document.getElementById('phone').value = userData.phone || '';
-    document.getElementById('dob').value = userData.dob || '';
-    
-    // Update display fields
-    document.getElementById('displayName').textContent = userData.full_name || userData.fullName || 'User';
-    document.getElementById('displayPhone').textContent = userData.phone || 'Not set';
-    document.getElementById('displayEmail').textContent = userData.email || '';
-    document.getElementById('displayDob').textContent = userData.dob ? new Date(userData.dob).toLocaleDateString('en-IN') : 'Not set';
-    
-    // Update header
-    document.getElementById('profileName').textContent = userData.full_name || userData.fullName || 'User';
-    document.getElementById('profilePhone').textContent = userData.phone || 'Not set';
-}
-
-// Preferences
-const emailNotif = document.getElementById('emailNotif');
-const smsNotif = document.getElementById('smsNotif');
-const promoNotif = document.getElementById('promoNotif');
-
-function savePreferences() {
-    localStorage.setItem('userPreferences', JSON.stringify({
-        emailNotif: emailNotif?.checked,
-        smsNotif: smsNotif?.checked,
-        promoNotif: promoNotif?.checked
-    }));
-}
-
-emailNotif?.addEventListener('change', savePreferences);
-smsNotif?.addEventListener('change', savePreferences);
-promoNotif?.addEventListener('change', savePreferences);
-
-// Load preferences
-document.addEventListener('DOMContentLoaded', () => {
-    const saved = JSON.parse(localStorage.getItem('userPreferences')) || {};
-    if (emailNotif) emailNotif.checked = saved.emailNotif !== false;
-    if (smsNotif) smsNotif.checked = saved.smsNotif !== false;
-    if (promoNotif) promoNotif.checked = saved.promoNotif === true;
-});
-
-// Account Deletion
-document.querySelectorAll('.btn-danger').forEach(btn => {
-    if (btn.textContent.includes('Delete Account')) {
-        btn.addEventListener('click', () => {
-            if (confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
-                if (confirm('Type "DELETE" to confirm account deletion')) {
-                    localStorage.clear();
-                    alert('Account deleted successfully.');
-                    window.location.href = 'index.html';
-                }
-            }
-        });
-    }
+    // Already handled by loadUserProfile and initializeProfileUI in the main section above
+    // But we'll keep this for any additional setup that might be needed
 });

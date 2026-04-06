@@ -76,3 +76,5 @@ celerybeat.pid
 *.bak
 *.tmp
 .cache/
+seed_inventory.py
+seed_medicines.py

@@ -195,28 +195,28 @@
             <h2>Add/Edit Medicine</h2>
             <form id="medicineForm">
                 <div class="form-group">
-                    <label for="medicineName">Medicine Name</label>
-                    <input type="text" id="medicineName" required>
+                    <label for="medicineName">Medicine Name *</label>
+                    <input type="text" id="medicineName" placeholder="e.g., Paracetamol 500mg" required>
                 </div>
                 <div class="form-group">
-                    <label for="company">Company</label>
-                    <input type="text" id="company" required>
+                    <label for="genericName">Generic Name</label>
+                    <input type="text" id="genericName" placeholder="e.g., Acetaminophen">
                 </div>
                 <div class="form-group">
-                    <label for="batch">Batch Number</label>
-                    <input type="text" id="batch" required>
+                    <label for="company">Brand/Company *</label>
+                    <input type="text" id="company" placeholder="e.g., Cipla" required>
                 </div>
                 <div class="form-group">
-                    <label for="stock">Stock Quantity</label>
-                    <input type="number" id="stock" required>
+                    <label for="category">Category</label>
+                    <input type="text" id="category" placeholder="e.g., Pain Relief">
                 </div>
                 <div class="form-group">
-                    <label for="price">Price (₹)</label>
-                    <input type="number" id="price" step="0.01" required>
+                    <label for="purchasePrice">Purchase Price (₹) *</label>
+                    <input type="number" id="purchasePrice" step="0.01" placeholder="Wholesale price" required>
                 </div>
                 <div class="form-group">
-                    <label for="expiryDate">Expiry Date</label>
-                    <input type="date" id="expiryDate" required>
+                    <label for="sellingPrice">Selling Price (₹) *</label>
+                    <input type="number" id="sellingPrice" step="0.01" placeholder="Retail price" required>
                 </div>
                 <button type="submit" class="btn btn-primary">Save Medicine</button>
             </form>

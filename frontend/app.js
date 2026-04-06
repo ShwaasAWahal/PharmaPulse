@@ -376,35 +376,46 @@ function formatCurrency(amount) {
 
 // Medicine Card Rendering
 function createMedicineCard(medicine) {
-    const stockStatus = getStockStatus(medicine.stock);
+    // Handle both API format and mock data format
+    const medicineId = medicine.id;
+    const name = medicine.name || 'Unknown Medicine';
+    const company = medicine.brand || medicine.company || 'Unknown Brand';
+    const price = medicine.selling_price || medicine.price || 0;
+    const stock = medicine.stock || 0; // NOTE: API may use inventory system, stock might need to be fetched separately
+    const category = medicine.category || 'other';
+    const emoji = medicine.emoji || '💊';
+    const batch = medicine.batch || medicine.batch_number || 'N/A';
+    const expiryDate = medicine.expiryDate || medicine.expiry_date || new Date().toISOString().split('T')[0];
+    
+    const stockStatus = getStockStatus(stock);
     const isOutOfStock = stockStatus.status === 'out-of-stock';
     
     const card = document.createElement('div');
     card.className = 'medicine-card';
     card.innerHTML = `
         <div class="medicine-image">
-            ${medicine.emoji}
+            ${emoji}
             <span class="stock-badge ${stockStatus.status}">${stockStatus.text}</span>
         </div>
         <div class="medicine-content">
-            <h3 class="medicine-name">${medicine.name}</h3>
-            <p class="medicine-company">${medicine.company}</p>
+            <h3 class="medicine-name">${name}</h3>
+            <p class="medicine-company">${company}</p>
             <div class="medicine-details">
                 <div class="medicine-detail">
-                    <span>📦 Batch: ${medicine.batch}</span>
+                    <span>📦 Batch: ${batch}</span>
                 </div>
                 <div class="medicine-detail">
-                    <span>📅 ${formatDate(medicine.expiryDate)}</span>
+                    <span>📅 ${formatDate(expiryDate)}</span>
                 </div>
             </div>
-            <div class="medicine-price">${formatCurrency(medicine.price)}</div>
+            <div class="medicine-price">${formatCurrency(price)}</div>
             <div class="medicine-actions">
                 <div class="btn-quantity">
-                    <button class="btn-qty-btn" id="dec-${medicine.id}" onclick="decreaseQty(${medicine.id})" ${isOutOfStock ? 'disabled' : ''}>−</button>
-                    <input type="number" class="btn-qty-input" id="qty-${medicine.id}" value="1" min="1" max="${medicine.stock}" readonly ${isOutOfStock ? 'disabled' : ''}>
-                    <button class="btn-qty-btn" id="inc-${medicine.id}" onclick="increaseQty(${medicine.id}, ${medicine.stock})" ${isOutOfStock ? 'disabled' : ''}>+</button>
+                    <button class="btn-qty-btn" id="dec-${medicineId}" onclick="decreaseQty(${medicineId})" ${isOutOfStock ? 'disabled' : ''}>−</button>
+                    <input type="number" class="btn-qty-input" id="qty-${medicineId}" value="1" min="1" max="${stock}" readonly ${isOutOfStock ? 'disabled' : ''}>
+                    <button class="btn-qty-btn" id="inc-${medicineId}" onclick="increaseQty(${medicineId}, ${stock})" ${isOutOfStock ? 'disabled' : ''}>+</button>
                 </div>
-                <button class="btn btn-add-cart" id="btn-${medicine.id}" onclick="addToCart(${medicine.id})" ${isOutOfStock ? 'disabled' : ''}>
+                <button class="btn btn-add-cart" id="btn-${medicineId}" onclick="addToCart(${medicineId})" ${isOutOfStock ? 'disabled' : ''}>
                     ${isOutOfStock ? 'Out of Stock' : 'Add to Cart'}
                 </button>
             </div>
@@ -415,14 +426,49 @@ function createMedicineCard(medicine) {
 
 // Cart Functions
 function addToCart(medicineId) {
-    const medicine = medicinesDatabase.find(m => m.id === medicineId);
-    const qtyInput = document.getElementById(`qty-${medicineId}`);
-    const quantity = parseInt(qtyInput.value) || 1;
+    // Search in allMedicines (from API) first, then fallback to mock database
+    let medicine = null;
     
-    if (medicine && quantity > 0) {
-        cart.addItem(medicine, quantity);
-        qtyInput.value = '1';
-        showNotification('Added to cart!');
+    // Get all medicines from page (if we've loaded them)
+    const grid = document.getElementById('medicinesGrid');
+    if (grid) {
+        // Try to get from nearby data if available
+        const medicineCards = grid.querySelectorAll('[data-medicine-id]');
+        const card = Array.from(medicineCards).find(c => parseInt(c.getAttribute('data-medicine-id')) === medicineId);
+        if (card && window.currentMedicines) {
+            medicine = window.currentMedicines.find(m => m.id === medicineId);
+        }
+    }
+    
+    // Fallback to mock database
+    if (!medicine && medicinesDatabase) {
+        medicine = medicinesDatabase.find(m => m.id === medicineId);
+    }
+    
+    if (!medicine) {
+        console.warn(`Medicine with ID ${medicineId} not found`);
+        showNotification('Medicine not found!');
+        return;
+    }
+    
+    const qtyInput = document.getElementById(`qty-${medicineId}`);
+    const quantity = parseInt(qtyInput?.value) || 1;
+    
+    if (quantity > 0) {
+        // Normalize the medicine object for cart storage
+        const cartItem = {
+            id: medicine.id,
+            name: medicine.name || 'Unknown Medicine',
+            brand: medicine.brand || medicine.company || 'Unknown Brand',
+            company: medicine.company || medicine.brand || 'Unknown Brand',
+            price: medicine.selling_price || medicine.price || 0,
+            emoji: medicine.emoji || '💊',
+            stock: medicine.stock || 0
+        };
+        
+        cart.addItem(cartItem, quantity);
+        if (qtyInput) qtyInput.value = '1';
+        showNotification('✓ Added to cart!');
     }
 }
 
@@ -466,7 +512,7 @@ function showNotification(message) {
 }
 
 // Page-Specific Initialization
-function initMedicinesPage() {
+async function initMedicinesPage() {
     const grid = document.getElementById('medicinesGrid');
     const searchInput = document.getElementById('searchInput');
     const categoryFilter = document.getElementById('categoryFilter');
@@ -474,33 +520,90 @@ function initMedicinesPage() {
 
     if (!grid) return;
 
+    // Store medicines fetched from API
+    let allMedicines = [];
+    let isLoading = false;
+
+    // Function to fetch medicines from backend API
+    async function fetchMedicinesFromAPI(search = '', category = '', page = 1) {
+        try {
+            isLoading = true;
+            grid.innerHTML = '<p style="text-align: center; padding: 2rem;">Loading medicines...</p>';
+            
+            const response = await apiService.listMedicines(page, 20, search, category);
+            
+            if (response.success && response.medicines) {
+                allMedicines = response.medicines;
+                filterAndDisplay();
+            } else {
+                grid.innerHTML = '<p style="text-align: center; padding: 2rem; color: var(--text-gray);">No medicines found or error loading data</p>';
+                console.warn('API Response:', response);
+            }
+        } catch (error) {
+            console.error('Error fetching medicines:', error);
+            // MANUAL ACTION: Make sure backend is running on http://localhost:5000
+            grid.innerHTML = `
+                <div style="text-align: center; padding: 2rem; color: var(--text-red);">
+                    <p>⚠️ Error loading medicines from backend</p>
+                    <p style="font-size: 0.9rem; color: var(--text-gray);">Please check if the backend server is running on http://localhost:5000</p>
+                    <p style="font-size: 0.85rem; color: var(--text-gray);">Backend Command: <code>cd backend && python app.py</code></p>
+                </div>
+            `;
+            // Fallback to local database if available
+            if (medicinesDatabase && medicinesDatabase.length > 0) {
+                console.log('Falling back to local medicines database...');
+                allMedicines = medicinesDatabase;
+                filterAndDisplay();
+            }
+        } finally {
+            isLoading = false;
+        }
+    }
+
     function filterAndDisplay() {
         const searchTerm = searchInput?.value?.toLowerCase() || '';
         const selectedCategory = categoryFilter?.value || '';
         const selectedCompany = companyFilter?.value || '';
 
-        const filtered = medicinesDatabase.filter(medicine => {
-            const matchesSearch = medicine.name.toLowerCase().includes(searchTerm) ||
-                                 medicine.company.toLowerCase().includes(searchTerm);
-            const matchesCategory = !selectedCategory || medicine.category === selectedCategory;
-            const matchesCompany = !selectedCompany || medicine.company.toLowerCase() === selectedCompany;
+        // Filter from API medicines or fallback to local database
+        const medicinesToFilter = allMedicines.length > 0 ? allMedicines : medicinesDatabase;
+        
+        const filtered = medicinesToFilter.filter(medicine => {
+            const name = (medicine.name || '').toLowerCase();
+            const company = (medicine.brand || medicine.company || '').toLowerCase();
+            const category = (medicine.category || '').toLowerCase();
+            
+            const matchesSearch = name.includes(searchTerm) || company.includes(searchTerm);
+            const matchesCategory = !selectedCategory || category.includes(selectedCategory);
+            const matchesCompany = !selectedCompany || company.includes(selectedCompany);
 
             return matchesSearch && matchesCategory && matchesCompany;
         });
 
         grid.innerHTML = '';
-        filtered.forEach(medicine => {
-            grid.appendChild(createMedicineCard(medicine));
-        });
+        if (filtered.length === 0) {
+            grid.innerHTML = '<p style="text-align: center; padding: 2rem; grid-column: 1/-1;">No medicines found matching your criteria.</p>';
+        } else {
+            filtered.forEach(medicine => {
+                const medicineCard = createMedicineCard(medicine);
+                grid.appendChild(medicineCard);
+            });
+        }
     }
 
     // Event listeners for filtering
-    searchInput?.addEventListener('input', filterAndDisplay);
-    categoryFilter?.addEventListener('change', filterAndDisplay);
-    companyFilter?.addEventListener('change', filterAndDisplay);
+    searchInput?.addEventListener('input', () => {
+        if (!isLoading) filterAndDisplay();
+    });
+    categoryFilter?.addEventListener('change', () => {
+        if (!isLoading) filterAndDisplay();
+    });
+    companyFilter?.addEventListener('change', () => {
+        if (!isLoading) filterAndDisplay();
+    });
 
-    // Initial display
-    filterAndDisplay();
+    // Initial fetch from API
+    await fetchMedicinesFromAPI();
 }
 
 function initCartPage() {
@@ -580,11 +683,56 @@ function initOrdersPage() {
 
     if (!ordersContainer) return;
 
+    let allOrders = [];
+
+    // Fetch orders from backend API
+    async function fetchOrdersFromAPI() {
+        try {
+            ordersContainer.innerHTML = '<p style="text-align: center; padding: 2rem;">Loading orders...</p>';
+            
+            const response = await apiService.listBills(1, 100); // Fetch up to 100 recent orders
+            
+            if (response.success && response.bills) {
+                // Transform API response to match UI expectations
+                allOrders = response.bills.map(bill => ({
+                    id: 'ORD' + bill.id,
+                    items: bill.items || [],
+                    totalAmount: bill.total_amount || bill.grand_total || 0,
+                    status: bill.status || 'processing',
+                    date: bill.created_at || new Date().toISOString().split('T')[0],
+                    invoiceNumber: bill.invoice_number || '',
+                    // MANUAL NOTE: Add timeline data from your backend if available
+                    // or set default timeline based on status
+                    timeline: getTimelineFromStatus(bill.status || 'processing', bill.created_at)
+                }));
+                displayOrders();
+            } else {
+                ordersContainer.innerHTML = '';
+                emptyOrders.style.display = 'block';
+                console.warn('API Response:', response);
+            }
+        } catch (error) {
+            console.error('Error fetching orders:', error);
+            ordersContainer.innerHTML = `
+                <div style="text-align: center; padding: 2rem; color: var(--text-red);">
+                    <p>⚠️ Error loading orders from backend</p>
+                    <p style="font-size: 0.9rem; color: var(--text-gray);">Please ensure backend is running on http://localhost:5000</p>
+                </div>
+            `;
+            // Fallback to local database
+            if (orderDatabase && orderDatabase.length > 0) {
+                console.log('Falling back to local orders database...');
+                allOrders = orderDatabase;
+                displayOrders();
+            }
+        }
+    }
+
     function displayOrders() {
         const selectedStatus = statusFilter?.value || '';
         const filtered = selectedStatus 
-            ? orderDatabase.filter(order => order.status === selectedStatus)
-            : orderDatabase;
+            ? allOrders.filter(order => order.status === selectedStatus)
+            : allOrders;
 
         ordersContainer.innerHTML = '';
         
@@ -599,7 +747,7 @@ function initOrdersPage() {
             const orderCard = document.createElement('div');
             orderCard.className = 'order-card';
             
-            const timelineHTML = order.timeline.map(step => `
+            const timelineHTML = (order.timeline || []).map(step => `
                 <div class="timeline-step">
                     <div class="timeline-dot ${step.completed ? 'active' : ''}"></div>
                     <div class="timeline-content">
@@ -609,11 +757,11 @@ function initOrdersPage() {
                 </div>
             `).join('');
 
-            const itemsHTML = order.items.map(item => `
+            const itemsHTML = (order.items || []).map(item => `
                 <div class="order-item">
-                    <span class="order-item-name">${item.name}</span>
-                    <span class="order-item-qty">Qty: ${item.qty}</span>
-                    <span class="order-item-price">${formatCurrency(item.price * item.qty)}</span>
+                    <span class="order-item-name">${item.medicine ? item.medicine.name : (item.name || 'Item')}</span>
+                    <span class="order-item-qty">Qty: ${item.quantity || item.qty || 0}</span>
+                    <span class="order-item-price">${formatCurrency((item.unit_price || item.price || 0) * (item.quantity || item.qty || 0))}</span>
                 </div>
             `).join('');
 
@@ -640,7 +788,53 @@ function initOrdersPage() {
     }
 
     statusFilter?.addEventListener('change', displayOrders);
-    displayOrders();
+    
+    // Fetch orders from API
+    fetchOrdersFromAPI();
+}
+
+// Helper function to create timeline based on order status
+function getTimelineFromStatus(status, createdDate) {
+    const baseDate = new Date(createdDate);
+    const timeline = [];
+
+    const statuses = ['Order Placed', 'Processing', 'Shipped', 'Delivered'];
+    const statusMap = {
+        'pending': ['Order Placed', 'Processing'],
+        'processing': ['Order Placed', 'Processing'],
+        'shipped': ['Order Placed', 'Processing', 'Shipped'],
+        'delivered': ['Order Placed', 'Processing', 'Shipped', 'Delivered'],
+        'cancelled': ['Order Placed', 'Cancelled']
+    };
+
+    const completedSteps = statusMap[status] || ['Order Placed'];
+    
+    completedSteps.forEach((step, idx) => {
+        const stepDate = new Date(baseDate);
+        stepDate.setDate(stepDate.getDate() + (idx * 2)); // Add 2 days per step for demo
+        timeline.push({
+            step: step,
+            date: stepDate.toISOString().split('T')[0],
+            completed: true
+        });
+    });
+
+    // Add remaining steps as incomplete
+    if (status !== 'delivered' && status !== 'cancelled') {
+        statuses.forEach((step, idx) => {
+            if (!completedSteps.includes(step)) {
+                const stepDate = new Date(baseDate);
+                stepDate.setDate(stepDate.getDate() + (completedSteps.length + idx) * 2);
+                timeline.push({
+                    step: step,
+                    date: stepDate.toISOString().split('T')[0],
+                    completed: false
+                });
+            }
+        });
+    }
+
+    return timeline;
 }
 
 // Initialize the page based on current location
