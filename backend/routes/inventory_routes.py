@@ -18,7 +18,7 @@ inventory_bp = Blueprint("inventory", __name__, url_prefix="/api/inventory")
 def list_inventory():
     """Paginated inventory list with filters."""
     page = request.args.get("page", 1, type=int)
-    per_page = min(request.args.get("per_page", 20, type=int), 100)
+    per_page = min(request.args.get("per_page", 20, type=int), 500)  # raised cap to 500
     branch_id = request.args.get("branch_id", type=int)
     medicine_id = request.args.get("medicine_id", type=int)
     include_expired = request.args.get("include_expired", "true").lower() == "true"
@@ -32,7 +32,50 @@ def list_inventory():
         include_expired=include_expired,
         include_low_stock_only=low_stock_only,
     )
+    result["inventory"] = result["items"]  # alias for frontend
     return jsonify({"success": True, **result}), 200
+
+
+@inventory_bp.get("/stock-summary")
+@jwt_required()
+def stock_summary():
+    """
+    Returns a map of medicine_id -> total_quantity for all
+    non-expired, active inventory at a given branch.
+    Used by the shop page to show accurate stock status.
+    """
+    from datetime import date
+    from sqlalchemy import func
+    from database.db import db
+    from models.inventory import Inventory
+
+    branch_id = request.args.get("branch_id", type=int)
+    today = date.today()
+
+    query = db.session.query(
+        Inventory.medicine_id,
+        func.sum(Inventory.quantity).label("total_qty")
+    ).filter(
+        Inventory.is_active == True,
+        Inventory.quantity > 0,
+        db.or_(
+            Inventory.expiry_date == None,
+            Inventory.expiry_date >= today
+        )
+    )
+
+    if branch_id:
+        query = query.filter(Inventory.branch_id == branch_id)
+
+    rows = query.group_by(Inventory.medicine_id).all()
+
+    stock_map = {row.medicine_id: int(row.total_qty) for row in rows}
+
+    return jsonify({
+        "success": True,
+        "stock_map": stock_map,
+        "total_medicines_in_stock": len(stock_map),
+    }), 200
 
 
 @inventory_bp.get("/<int:inventory_id>")

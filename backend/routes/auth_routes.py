@@ -111,6 +111,18 @@ def me():
     return jsonify({"success": True, "user": user.to_dict()}), 200
 
 
+@auth_bp.put("/me")
+@jwt_required()
+def update_me():
+    """Update the current user's own profile."""
+    user = get_current_user()
+    data = request.get_json(silent=True) or {}
+    if "full_name" in data and data["full_name"].strip():
+        user.full_name = data["full_name"].strip()
+    db.session.commit()
+    return jsonify({"success": True, "user": user.to_dict()}), 200
+
+
 @auth_bp.put("/me/password")
 @jwt_required()
 def change_password():

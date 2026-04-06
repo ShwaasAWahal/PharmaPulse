@@ -37,6 +37,7 @@
                 <a href="#" class="sidebar-link" data-section="expiry">Expiry Tracking</a>
                 <a href="#" class="sidebar-link" data-section="orders">Orders Management</a>
                 <a href="#" class="sidebar-link" data-section="analytics">Analytics</a>
+                <a href="#" class="sidebar-link" data-section="users">User Management</a>
             </div>
         </aside>
 
@@ -46,7 +47,13 @@
                 <section id="inventory-section" class="admin-section active">
                     <div class="page-header">
                         <h1>Inventory Management</h1>
-                        <button class="btn btn-primary" id="addMedicineBtn">+ Add Medicine</button>
+                        <div style="display:flex;gap:.75rem;align-items:center">
+                            <label style="display:flex;align-items:center;gap:.4rem;font-size:.9rem;cursor:pointer">
+                                <input type="checkbox" id="showExpiredToggle" onchange="displayInventory(this.checked)" style="width:16px;height:16px">
+                                Show Expired
+                            </label>
+                            <button class="btn btn-primary" id="addMedicineBtn">+ Add Medicine</button>
+                        </div>
                     </div>
 
                     <div class="stats-grid">
@@ -112,9 +119,9 @@
                             <label for="expiryRange">Show medicines expiring in</label>
                             <select id="expiryRange" class="filter-select">
                                 <option value="7">Next 7 days</option>
-                                <option value="30">Next 30 days</option>
+                                <option value="30" selected>Next 30 days</option>
                                 <option value="90">Next 90 days</option>
-                                <option value="all">All medicines</option>
+                                <option value="365">Next 365 days</option>
                             </select>
                         </div>
                     </div>
@@ -184,8 +191,70 @@
                         </div>
                     </div>
                 </section>
+                <!-- Users Section -->
+                <section id="users-section" class="admin-section">
+                    <div class="page-header">
+                        <h1>User Management</h1>
+                        <button class="btn btn-primary" id="addUserBtn">+ Add User</button>
+                    </div>
+
+                    <div class="table-wrapper">
+                        <table class="admin-table">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Email</th>
+                                    <th>Role</th>
+                                    <th>Branch</th>
+                                    <th>Status</th>
+                                    <th>Last Login</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="usersTable">
+                                <!-- populated by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
             </div>
         </main>
+    </div>
+
+    <!-- Add User Modal -->
+    <div class="modal" id="userModal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h2 id="userModalTitle">Add New User</h2>
+            <form id="userForm">
+                <input type="hidden" id="editUserId" value="">
+                <div class="form-group">
+                    <label for="userFullName">Full Name *</label>
+                    <input type="text" id="userFullName" placeholder="e.g. Jane Doe" required>
+                </div>
+                <div class="form-group">
+                    <label for="userEmail">Email *</label>
+                    <input type="email" id="userEmail" placeholder="jane@pharmacy.com" required>
+                </div>
+                <div class="form-group" id="passwordGroup">
+                    <label for="userPassword">Password *</label>
+                    <input type="password" id="userPassword" placeholder="Min 8 characters">
+                </div>
+                <div class="form-group">
+                    <label for="userRole">Role *</label>
+                    <select id="userRole" required>
+                        <option value="pharmacist">Pharmacist</option>
+                        <option value="admin">Admin</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="userBranchId">Branch ID</label>
+                    <input type="number" id="userBranchId" placeholder="e.g. 1" value="1">
+                </div>
+                <button type="submit" class="btn btn-primary" style="width:100%;margin-top:.5rem">Save User</button>
+            </form>
+        </div>
     </div>
 
     <!-- Modal for adding/editing medicines -->

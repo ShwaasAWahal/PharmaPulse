@@ -53,6 +53,8 @@ def list_bills():
         page=page,
         per_page=per_page,
     )
+    # include "bills" key as alias so frontend can use response.bills or response.items
+    result["bills"] = result["items"]
     return jsonify({"success": True, **result}), 200
 
 
