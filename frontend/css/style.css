@@ -1500,3 +1500,65 @@ input:checked + .toggle-slider:before {
         width: 100%;
     }
 }
+
+/* ==============================
+   PAGINATION (IMPROVED UI)
+   ============================== */
+
+#pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 6px;
+    margin-top: var(--spacing-lg);
+    flex-wrap: wrap;
+}
+
+/* Buttons */
+#pagination button {
+    min-width: 34px;
+    height: 34px;
+    padding: 0 10px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-white);
+    color: var(--text-dark);
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+/* Hover */
+#pagination button:hover {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+}
+
+/* Active page */
+#pagination button.active {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+    font-weight: 600;
+}
+
+/* Prev/Next */
+#pagination button.nav-btn {
+    padding: 0 12px;
+    font-weight: 600;
+}
+
+/* Dots (...) */
+#pagination span {
+    padding: 0 6px;
+    font-size: 0.9rem;
+    color: var(--text-gray);
+}
+
+/* Remove ugly button outline */
+#pagination button:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(230, 57, 70, 0.2);
+}

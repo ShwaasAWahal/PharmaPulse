@@ -3,6 +3,30 @@
 // ============================================
 
 // ── Sidebar navigation ────────────────────────────────────────────────────────
+let currentPage = 1;
+const pageSize = 100;
+let totalPages = 1;
+
+document.addEventListener("DOMContentLoaded", async () => {
+    try {
+        const res = await apiService.request("/auth/me"); // or your user endpoint
+        const user = res.user;
+
+        // 🔴 If not admin → BLOCK ACCESS
+        if (!user || user.role !== "admin") {
+            alert("Access denied. Admins only.");
+            window.location.href = "index.html"; // redirect
+            return;
+        }
+
+        // ✅ If admin → load page
+        displayInventory(false);
+
+    } catch (err) {
+        console.error(err);
+        window.location.href = "login.html";
+    }
+});
 
 document.querySelectorAll('.sidebar-link').forEach(link => {
     link.addEventListener('click', async (e) => {
@@ -84,13 +108,16 @@ async function displayInventory(includeExpired = false) {
         }
 
         // Load inventory — exclude expired by default so table isn't swamped
-        const resp = await apiService.listInventory(1, 100, null, null, includeExpired, false);
+        const resp = await apiService.listInventory(currentPage, pageSize, null, null, includeExpired, false);
         const inventory = resp.inventory || resp.items || [];
+        totalPages = Math.ceil((resp.total || inventory.length) / pageSize);
 
         if (inventory.length === 0) {
             tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:2rem;color:#888">No inventory records found.</td></tr>';
             return;
         }
+
+        renderPagination();
 
         tbody.innerHTML = inventory.map(item => {
             const badge = getExpiryBadge(item.expiry_date);
@@ -116,6 +143,85 @@ async function displayInventory(includeExpired = false) {
     } catch (e) {
         console.error('Inventory error:', e);
         tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:2rem;color:#e53e3e">⚠️ Error loading inventory. Is the backend running?</td></tr>';
+    }
+}
+
+function renderPagination() {
+    const container = document.getElementById("pagination");
+    container.innerHTML = "";
+
+    const maxVisible = 5; // pages around current
+    const total = totalPages;
+
+    // 🔹 Prev
+    if (currentPage > 1) {
+        const prev = document.createElement("button");
+        prev.innerText = "Prev";
+        prev.classList.add("nav-btn");
+        prev.onclick = () => {
+            currentPage--;
+            displayInventory();
+        };
+        container.appendChild(prev);
+    }
+
+    function createButton(page) {
+        const btn = document.createElement("button");
+        btn.classList.add("list-btn")
+        btn.innerText = page;
+
+        if (page === currentPage) {
+            btn.classList.add("active");
+        }
+
+        btn.onclick = () => {
+            currentPage = page;
+            displayInventory();
+        };
+
+        return btn;
+    }
+
+    // 🔹 Always show first page
+    container.appendChild(createButton(1));
+
+    // 🔹 Left dots
+    if (currentPage > 3) {
+        const dots = document.createElement("span");
+        dots.innerText = "...";
+        container.appendChild(dots);
+    }
+
+    // 🔹 Middle pages
+    let start = Math.max(2, currentPage - 2);
+    let end = Math.min(total - 1, currentPage + 2);
+
+    for (let i = start; i <= end; i++) {
+        container.appendChild(createButton(i));
+    }
+
+    // 🔹 Right dots
+    if (currentPage < total - 2) {
+        const dots = document.createElement("span");
+        dots.innerText = "...";
+        container.appendChild(dots);
+    }
+
+    // 🔹 Last page
+    if (total > 1) {
+        container.appendChild(createButton(total));
+    }
+
+    // 🔹 Next
+    if (currentPage < total) {
+        const next = document.createElement("button");
+        next.innerText = "Next";
+        next.classList.add("nav-btn");
+        next.onclick = () => {
+            currentPage++;
+            displayInventory();
+        };
+        container.appendChild(next);
     }
 }
 
@@ -262,7 +368,6 @@ async function displayOrdersManagement() {
                 <tr>
                     <td><strong>${bill.invoice_number || `#${bill.id}`}</strong></td>
                     <td>${bill.customer_name || 'Walk-in'}</td>
-                    <td>${(bill.items || []).length} item(s)</td>
                     <td><strong>${formatCurrency(bill.total_amount)}</strong></td>
                     <td><span class="order-status ${bill.payment_status || 'paid'}">${(bill.payment_status || 'paid').toUpperCase()}</span></td>
                     <td>${formatDate(bill.created_at)}</td>

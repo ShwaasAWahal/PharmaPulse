@@ -386,11 +386,24 @@ async function initOrdersPage() {
     let allOrders = [];
 
     async function fetchOrders() {
+        const userData = jwtManager.getUserData();
+        const currentUserName = userData?.full_name;
+
         container.innerHTML = '<p style="text-align:center;padding:2rem">Loading orders...</p>';
         try {
             const resp = await apiService.listBills(1, 100);
             if (resp.success && (resp.bills || resp.items)) {
-                allOrders = (resp.bills || resp.items).map(bill => ({
+                
+                const rawOrders = resp.bills || resp.items || [];
+
+                const filteredOrders = rawOrders.filter(bill => {
+                    return bill.customer_name === currentUserName;
+                });
+                
+                // allOrders = (resp.bills || resp.items).map(bill => ({
+
+                allOrders = filteredOrders.map(bill => ({
+
                     id:            `INV-${bill.id}`,
                     invoiceNumber: bill.invoice_number || `#${bill.id}`,
                     items:         bill.items || [],
@@ -399,6 +412,9 @@ async function initOrdersPage() {
                     date:          bill.created_at || new Date().toISOString(),
                     customer:      bill.customer_name || 'Walk-in',
                 }));
+
+
+
                 displayOrders();
             } else {
                 container.innerHTML = '';
