@@ -6,6 +6,7 @@
 let currentPage = 1;
 const pageSize = 100;
 let totalPages = 1;
+let inventorySearchQuery = "";
 
 document.addEventListener("DOMContentLoaded", async () => {
     try {
@@ -18,6 +19,11 @@ document.addEventListener("DOMContentLoaded", async () => {
             window.location.href = "index.html"; // redirect
             return;
         }
+        document.getElementById("inventorySearchInput")?.addEventListener("input", (e) => {
+            inventorySearchQuery = e.target.value.toLowerCase();
+            currentPage = 1; // reset pagination
+            displayInventory(document.getElementById('showExpiredToggle')?.checked || false);
+        });
 
         // ✅ If admin → load page
         displayInventory(false);
@@ -40,11 +46,12 @@ document.querySelectorAll('.sidebar-link').forEach(link => {
         const target = document.getElementById(`${section}-section`);
         if (target) target.classList.add('active');
 
-        if (section === 'inventory')  displayInventory(document.getElementById('showExpiredToggle')?.checked || false);
-        if (section === 'expiry')     displayExpiryTracking();
-        if (section === 'orders')     displayOrdersManagement();
-        if (section === 'analytics')  displayAnalytics();
-        if (section === 'users')      displayUsers();
+        if (section === 'inventory') displayInventory(document.getElementById('showExpiredToggle')?.checked || false);
+        if (section === 'expiry') displayExpiryTracking();
+        if (section === 'orders') displayOrdersManagement();
+        if (section === 'analytics') displayAnalytics();
+        if (section === 'users') displayUsers();
+        if (section === 'ml') { displayMLSection(); checkMLStatus(); }
     });
 });
 
@@ -74,13 +81,13 @@ function getExpiryBadge(expiryDateStr) {
     if (!expiryDateStr) return { cls: 'status-ok', text: 'N/A' };
 
     const today = new Date();
-    today.setHours(0 , 0 , 0 , 0);
+    today.setHours(0, 0, 0, 0);
 
     const expiry = new Date(expiryDateStr);
-    expiry.setHours(0 , 0 , 0 , 0);
-    
+    expiry.setHours(0, 0, 0, 0);
+
     const days = Math.ceil((expiry - today) / 86400000);
-    if (days < 0)   return { cls: 'status-expired', text: 'EXPIRED' };
+    if (days < 0) return { cls: 'status-expired', text: 'EXPIRED' };
     if (days <= 30) return { cls: 'status-expiring', text: `EXPIRING IN ${days}D` };
     return { cls: 'status-ok', text: 'VALID' };
 }
@@ -88,10 +95,10 @@ function getExpiryBadge(expiryDateStr) {
 // ── Inventory ─────────────────────────────────────────────────────────────────
 
 async function displayInventory(includeExpired = false) {
-    const tbody          = document.getElementById('inventoryTable');
-    const totalMed       = document.getElementById('totalMedicines');
-    const lowStockEl     = document.getElementById('lowStock');
-    const outOfStockEl   = document.getElementById('outOfStock');
+    const tbody = document.getElementById('inventoryTable');
+    const totalMed = document.getElementById('totalMedicines');
+    const lowStockEl = document.getElementById('lowStock');
+    const outOfStockEl = document.getElementById('outOfStock');
     const expiringSoonEl = document.getElementById('expiringSoon');
     if (!tbody) return;
 
@@ -101,15 +108,25 @@ async function displayInventory(includeExpired = false) {
         // Load dashboard summary for KPIs
         const summary = await apiService.getDashboardSummary();
         if (summary.success) {
-            if (totalMed)       totalMed.textContent       = summary.total_medicines        || 0;
-            if (lowStockEl)     lowStockEl.textContent     = summary.low_stock_count        || 0;
-            if (outOfStockEl)   outOfStockEl.textContent   = summary.expired_count          || 0;
-            if (expiringSoonEl) expiringSoonEl.textContent = summary.expiring_soon_count    || 0;
+            if (totalMed) totalMed.textContent = summary.total_medicines || 0;
+            if (lowStockEl) lowStockEl.textContent = summary.low_stock_count || 0;
+            if (outOfStockEl) outOfStockEl.textContent = summary.expired_count || 0;
+            if (expiringSoonEl) expiringSoonEl.textContent = summary.expiring_soon_count || 0;
         }
 
         // Load inventory — exclude expired by default so table isn't swamped
         const resp = await apiService.listInventory(currentPage, pageSize, null, null, includeExpired, false);
-        const inventory = resp.inventory || resp.items || [];
+        let inventory = resp.inventory || resp.items || [];
+
+        // 🔍 APPLY SEARCH FILTER
+        if (inventorySearchQuery) {
+            inventory = inventory.filter(item =>
+                (item.medicine_name || "").toLowerCase().includes(inventorySearchQuery) ||
+                (item.generic_name || "").toLowerCase().includes(inventorySearchQuery) ||
+                (item.branch_name || "").toLowerCase().includes(inventorySearchQuery) ||
+                (item.batch_number || "").toLowerCase().includes(inventorySearchQuery)
+            );
+        }
         totalPages = Math.ceil((resp.total || inventory.length) / pageSize);
 
         if (inventory.length === 0) {
@@ -133,7 +150,7 @@ async function displayInventory(includeExpired = false) {
                 <td><span class="status-badge ${badge.cls}">${badge.text}</span></td>
                 <td>
                     <button class="btn btn-secondary" style="font-size:.8rem;padding:.3rem .7rem"
-                        onclick="openAdjustModal(${item.id}, '${(item.medicine_name||'').replace(/'/g,"\\'")}', ${item.quantity})">
+                        onclick="openAdjustModal(${item.id}, '${(item.medicine_name || '').replace(/'/g, "\\'")}', ${item.quantity})">
                         Adjust
                     </button>
                 </td>
@@ -246,12 +263,12 @@ window.addEventListener('click', e => {
 medicineForm?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const data = {
-        name:           document.getElementById('medicineName')?.value?.trim(),
-        generic_name:   document.getElementById('genericName')?.value?.trim() || null,
-        brand:          document.getElementById('company')?.value?.trim() || null,
-        category:       document.getElementById('category')?.value?.trim() || null,
+        name: document.getElementById('medicineName')?.value?.trim(),
+        generic_name: document.getElementById('genericName')?.value?.trim() || null,
+        brand: document.getElementById('company')?.value?.trim() || null,
+        category: document.getElementById('category')?.value?.trim() || null,
         purchase_price: parseFloat(document.getElementById('purchasePrice')?.value || 0),
-        selling_price:  parseFloat(document.getElementById('sellingPrice')?.value || 0),
+        selling_price: parseFloat(document.getElementById('sellingPrice')?.value || 0),
     };
 
     if (!data.name || !data.purchase_price || !data.selling_price) {
@@ -298,7 +315,7 @@ function openAdjustModal(inventoryId, medicineName, currentQty) {
 // ── Expiry tracking ───────────────────────────────────────────────────────────
 
 async function displayExpiryTracking() {
-    const timeline   = document.getElementById('expiryTimeline');
+    const timeline = document.getElementById('expiryTimeline');
     const expiryRange = document.getElementById('expiryRange');
     if (!timeline) return;
 
@@ -346,15 +363,15 @@ async function displayExpiryTracking() {
 // ── Orders management ─────────────────────────────────────────────────────────
 
 async function displayOrdersManagement() {
-    const tbody      = document.getElementById('ordersTable');
-    const statusSel  = document.getElementById('orderStatus');
+    const tbody = document.getElementById('ordersTable');
+    const statusSel = document.getElementById('orderStatus');
     if (!tbody) return;
 
     async function updateOrders() {
         tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:2rem">Loading orders...</td></tr>';
         try {
             const resp = await apiService.listBills(1, 100);
-            let bills  = resp.bills || resp.items || [];
+            let bills = resp.bills || resp.items || [];
 
             const selected = statusSel?.value || '';
             if (selected) bills = bills.filter(b => b.payment_status === selected);
@@ -407,12 +424,12 @@ async function viewInvoice(saleId) {
 // ── Analytics ─────────────────────────────────────────────────────────────────
 
 async function displayAnalytics() {
-    const companySalesEl  = document.getElementById('companySalesChart');
-    const topSellersEl    = document.getElementById('topSellersChart');
+    const companySalesEl = document.getElementById('companySalesChart');
+    const topSellersEl = document.getElementById('topSellersChart');
     if (!companySalesEl || !topSellersEl) return;
 
     companySalesEl.innerHTML = '<p style="color:#888;padding:1rem">Loading...</p>';
-    topSellersEl.innerHTML   = '<p style="color:#888;padding:1rem">Loading...</p>';
+    topSellersEl.innerHTML = '<p style="color:#888;padding:1rem">Loading...</p>';
 
     try {
         // ── Monthly revenue ────────────────────────────────────────────────────
@@ -423,8 +440,8 @@ async function displayAnalytics() {
                 <div style="display:flex;flex-direction:column;gap:.5rem;width:100%">
                     <p style="font-weight:600;margin-bottom:.5rem;color:#4a5568">Monthly Revenue (last 6 months)</p>
                     ${revenueResp.revenue_data.map(r => {
-                        const pct = maxRevenue > 0 ? (r.revenue / maxRevenue * 100) : 0;
-                        return `
+                const pct = maxRevenue > 0 ? (r.revenue / maxRevenue * 100) : 0;
+                return `
                         <div style="display:flex;align-items:center;gap:1rem">
                             <span style="width:80px;font-size:.85rem;color:#718096">${r.month}</span>
                             <div style="flex:1;background:#e2e8f0;border-radius:4px;height:24px;overflow:hidden">
@@ -435,7 +452,7 @@ async function displayAnalytics() {
                             </div>
                             <span style="font-size:.85rem;color:#4a5568;width:80px;text-align:right">₹${r.revenue.toLocaleString('en-IN')}</span>
                         </div>`;
-                    }).join('')}
+            }).join('')}
                 </div>`;
         } else {
             companySalesEl.innerHTML = '<p style="color:#888;padding:1rem">No revenue data available yet. Start creating bills!</p>';
@@ -449,19 +466,19 @@ async function displayAnalytics() {
                 <div style="display:flex;flex-direction:column;gap:.75rem;width:100%">
                     <p style="font-weight:600;margin-bottom:.5rem;color:#4a5568">Top 5 Best Sellers (last 30 days)</p>
                     ${topResp.top_medicines.map((m, i) => {
-                        const pct = maxUnits > 0 ? (m.total_units_sold / maxUnits * 100) : 0;
-                        const colours = ['#2B6CB0','#2C7A7B','#276749','#744210','#702459'];
-                        return `
+                const pct = maxUnits > 0 ? (m.total_units_sold / maxUnits * 100) : 0;
+                const colours = ['#2B6CB0', '#2C7A7B', '#276749', '#744210', '#702459'];
+                return `
                         <div>
                             <div style="display:flex;justify-content:space-between;margin-bottom:.25rem">
-                                <span style="font-size:.85rem;font-weight:600">${i+1}. ${m.name}</span>
+                                <span style="font-size:.85rem;font-weight:600">${i + 1}. ${m.name}</span>
                                 <span style="font-size:.8rem;color:#718096">${m.total_units_sold} units</span>
                             </div>
                             <div style="background:#e2e8f0;border-radius:4px;height:12px;overflow:hidden">
                                 <div style="width:${pct}%;background:${colours[i]};height:100%;border-radius:4px"></div>
                             </div>
                         </div>`;
-                    }).join('')}
+            }).join('')}
                 </div>`;
         } else {
             topSellersEl.innerHTML = '<p style="color:#888;padding:1rem">No sales data yet. Create some bills to see top sellers!</p>';
@@ -470,15 +487,15 @@ async function displayAnalytics() {
     } catch (e) {
         console.error('Analytics error:', e);
         companySalesEl.innerHTML = '<p style="color:#e53e3e;padding:1rem">⚠️ Analytics unavailable.</p>';
-        topSellersEl.innerHTML   = '<p style="color:#e53e3e;padding:1rem">⚠️ Top sellers unavailable.</p>';
+        topSellersEl.innerHTML = '<p style="color:#e53e3e;padding:1rem">⚠️ Top sellers unavailable.</p>';
     }
 }
 
 // ── User Management ───────────────────────────────────────────────────────────
 
-const userModal    = document.getElementById('userModal');
-const addUserBtn   = document.getElementById('addUserBtn');
-const userForm     = document.getElementById('userForm');
+const userModal = document.getElementById('userModal');
+const addUserBtn = document.getElementById('addUserBtn');
+const userForm = document.getElementById('userForm');
 
 addUserBtn?.addEventListener('click', () => {
     // Reset to "add" mode
@@ -493,11 +510,11 @@ addUserBtn?.addEventListener('click', () => {
 userForm?.addEventListener('submit', async (e) => {
     e.preventDefault();
 
-    const editId   = document.getElementById('editUserId').value;
+    const editId = document.getElementById('editUserId').value;
     const fullName = document.getElementById('userFullName').value.trim();
-    const email    = document.getElementById('userEmail').value.trim();
+    const email = document.getElementById('userEmail').value.trim();
     const password = document.getElementById('userPassword').value;
-    const role     = document.getElementById('userRole').value;
+    const role = document.getElementById('userRole').value;
     const branchId = parseInt(document.getElementById('userBranchId').value) || null;
 
     if (!fullName || !email || !role) {
@@ -512,7 +529,7 @@ userForm?.addEventListener('submit', async (e) => {
             // ── Edit mode: update role/branch only ────────────────────────────
             resp = await apiService.updateUser(editId, {
                 full_name: fullName,
-                role:      role,
+                role: role,
                 branch_id: branchId,
             });
         } else {
@@ -581,14 +598,14 @@ async function displayUsers() {
                         Edit
                     </button>
                     ${user.is_active
-                        ? `<button class="btn" style="font-size:.8rem;padding:.3rem .7rem;background:#E53E3E;color:white;border:none;border-radius:6px;cursor:pointer"
+                ? `<button class="btn" style="font-size:.8rem;padding:.3rem .7rem;background:#E53E3E;color:white;border:none;border-radius:6px;cursor:pointer"
                             onclick="deactivateUser(${user.id}, '${user.full_name}')">
                             Deactivate
                           </button>`
-                        : `<button class="btn btn-secondary"
+                : `<button class="btn btn-secondary"
                             style="font-size:.8rem;padding:.3rem .7rem;opacity:.6"
                             disabled>Inactive</button>`
-                    }
+            }
                 </td>
             </tr>
         `).join('');
@@ -600,10 +617,10 @@ async function displayUsers() {
 
 function openEditUser(id, fullName, email, role, branchId) {
     document.getElementById('userModalTitle').textContent = 'Edit User';
-    document.getElementById('editUserId').value  = id;
+    document.getElementById('editUserId').value = id;
     document.getElementById('userFullName').value = fullName;
-    document.getElementById('userEmail').value    = email;
-    document.getElementById('userRole').value     = role;
+    document.getElementById('userEmail').value = email;
+    document.getElementById('userRole').value = role;
     document.getElementById('userBranchId').value = branchId || 1;
 
     // Hide password field when editing

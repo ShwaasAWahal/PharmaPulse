@@ -1,18 +1,20 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard - Pharma Pulse</title>
     <link rel="stylesheet" href="./css/style.css">
 </head>
+
 <body>
     <nav class="navbar">
         <div class="container">
             <div class="navbar-brand">
                 <svg class="logo-icon" viewBox="0 0 24 24" width="28" height="28">
-                    <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/>
-                    <path d="M12 6v12M6 12h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2" />
+                    <path d="M12 6v12M6 12h12" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
                 </svg>
                 <span class="brand-name">Pharma Pulse</span>
             </div>
@@ -38,6 +40,7 @@
                 <a href="#" class="sidebar-link" data-section="orders">Orders Management</a>
                 <a href="#" class="sidebar-link" data-section="analytics">Analytics</a>
                 <a href="#" class="sidebar-link" data-section="users">User Management</a>
+                <a href="#" class="sidebar-link" data-section="ml">AI Insights</a>
             </div>
         </aside>
 
@@ -45,17 +48,39 @@
             <div class="container">
                 <!-- Inventory Section -->
                 <section id="inventory-section" class="admin-section active">
-                    <div class="page-header">
+                    <!-- <div class="page-header">
                         <h1>Inventory Management</h1>
                         <div style="display:flex;gap:.75rem;align-items:center">
                             <label style="display:flex;align-items:center;gap:.4rem;font-size:.9rem;cursor:pointer">
-                                <input type="checkbox" id="showExpiredToggle" onchange="displayInventory(this.checked)" style="width:16px;height:16px">
+                                <input type="checkbox" id="showExpiredToggle" onchange="displayInventory(this.checked)"
+                                    style="width:16px;height:16px">
                                 Show Expired
                             </label>
                             <button class="btn btn-primary" id="addMedicineBtn">+ Add Medicine</button>
                         </div>
-                    </div>
+                    </div> -->
 
+                    <div class="page-header">
+                        <h1>Inventory Management</h1>
+
+                        <div class="inventory-controls">
+                            <!-- 🔍 Search Bar -->
+                            <div class="inventory-search">
+                                <input type="text" id="inventorySearchInput"
+                                    placeholder="Search medicines, company, batch...">
+                            </div>
+
+                            <!-- Existing controls -->
+                            <div style="display:flex;gap:.75rem;align-items:center">
+                                <label style="display:flex;align-items:center;gap:.4rem;font-size:.9rem;cursor:pointer">
+                                    <input type="checkbox" id="showExpiredToggle"
+                                        onchange="displayInventory(this.checked)">
+                                    Show Expired
+                                </label>
+                                <button class="btn btn-primary" id="addMedicineBtn">+ Add Medicine</button>
+                            </div>
+                        </div>
+                    </div>
                     <div class="stats-grid">
                         <div class="stat-card">
                             <div class="stat-icon">📦</div>
@@ -87,7 +112,7 @@
                         </div>
                     </div>
 
-                    <div id = "pagination"></div>
+                    <div id="pagination"></div>
                     <div class="table-wrapper">
                         <table class="admin-table">
                             <thead>
@@ -218,6 +243,156 @@
                     </div>
                 </section>
 
+                <!-- AI Insights Section -->
+                <section id="ml-section" class="admin-section">
+                    <div class="page-header">
+                        <h1>AI Insights</h1>
+                    </div>
+
+                    <!-- ML Status bar -->
+                    <div id="mlStatusBar">
+                        <span style="color:#6C757D">Checking ML model status…</span>
+                    </div>
+
+                    <!-- Sub-tabs -->
+                    <div class="ml-tabs">
+                        <button class="ml-tab active" data-panel="sales">📈 Sales Prediction</button>
+                        <button class="ml-tab" data-panel="alt">💊 Alternate Medicine</button>
+                        <button class="ml-tab" data-panel="rec">🛒 Bought Together</button>
+                    </div>
+
+                    <!-- ─── Panel 1: Sales Prediction ─── -->
+                    <div class="ml-panel active" id="panel-sales">
+                        <div class="sp-controls">
+                            <label for="spHorizonSelect">Forecast horizon:</label>
+                            <select id="spHorizonSelect" class="filter-select">
+                                <option value="7">7 days</option>
+                                <option value="14">14 days</option>
+                                <option value="30" selected>30 days</option>
+                                <option value="60">60 days</option>
+                                <option value="90">90 days</option>
+                            </select>
+                            <button class="btn btn-primary" id="spRunBtn">Run Forecast</button>
+                        </div>
+
+                        <div id="salesPredictionResult" style="display:none">
+                            <!-- Summary cards -->
+                            <div class="sp-summary-row">
+                                <div class="sp-summary-card">
+                                    <div class="sp-label">Forecast Period</div>
+                                    <div class="sp-value" id="spDays">—</div>
+                                    <div style="font-size:.78rem;color:#aaa;margin-top:.15rem">days</div>
+                                </div>
+                                <div class="sp-summary-card">
+                                    <div class="sp-label">Total Predicted Sales</div>
+                                    <div class="sp-value" id="spTotalSales">—</div>
+                                    <div style="font-size:.78rem;color:#aaa;margin-top:.15rem">units</div>
+                                </div>
+                                <div class="sp-summary-card">
+                                    <div class="sp-label">Avg Daily Sales</div>
+                                    <div class="sp-value" id="spAvgDaily">—</div>
+                                    <div style="font-size:.78rem;color:#aaa;margin-top:.15rem">units/day</div>
+                                </div>
+                                <div class="sp-summary-card">
+                                    <div class="sp-label">Model</div>
+                                    <div class="sp-value" id="spModel" style="font-size:1rem;padding-top:.35rem">—</div>
+                                </div>
+                            </div>
+
+                            <!-- Bar chart -->
+                            <div class="sp-chart-wrap">
+                                <div class="sp-chart-title">Predicted Sales Timeline</div>
+                                <div id="spChartBars"></div>
+                            </div>
+
+                            <!-- Preview table -->
+                            <div class="sp-table-wrap">
+                                <table class="admin-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Day</th>
+                                            <th>Predicted Sales</th>
+                                            <th>Visual</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="spTableBody"></tbody>
+                                </table>
+                                <p
+                                    style="text-align:center;padding:.75rem;font-size:.82rem;color:#aaa;border-top:1px solid #f0f0f0">
+                                    Showing first 10 days — full data used in chart above
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- Initial loading state -->
+                        <div id="salesLoadingInit"
+                            style="display:flex;align-items:center;gap:.75rem;padding:2rem;color:#6C757D">
+                            <div class="ml-spinner"></div> Initialising forecast model…
+                            <div id="salesPredictionResult" style="display:none; margin-top:20px;">
+
+                                <div style="display:flex; gap:20px; margin-bottom:20px;">
+                                    <div>Total Sales: <span id="spTotalSales">—</span></div>
+                                    <div>Avg Daily: <span id="spAvgDaily">—</span></div>
+                                    <div>Days: <span id="spDays">—</span></div>
+                                    <div>Model: <span id="spModel">—</span></div>
+                                </div>
+
+                                <div id="spChartBars"></div>
+
+                                <table>
+                                    <tbody id="spTableBody"></tbody>
+                                </table>
+
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ─── Panel 2: Alternate Medicine ─── -->
+                    <div class="ml-panel" id="panel-alt">
+                        <p style="font-size:.92rem;color:#6C757D;margin-bottom:1rem">
+                            Search for any branded medicine to find its generic substitutes and alternatives.
+                        </p>
+
+                        <div id="altSearchWrapper">
+                            <div class="alt-search-row">
+                                <input type="text" id="altSearchInput" placeholder="e.g. Dolo 650, Crocin, Azithral…"
+                                    autocomplete="off">
+                                <button class="btn btn-primary" id="altSearchBtn">Search</button>
+                            </div>
+                            <div id="altSuggestBox"></div>
+                        </div>
+
+                        <div id="altResults">
+                            <div style="padding:2rem;text-align:center;color:#aaa">
+                                <div style="font-size:3rem;margin-bottom:.75rem">💊</div>
+                                <p>Search for a medicine above to see its alternatives.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ─── Panel 3: Recommendations ─── -->
+                    <div class="ml-panel" id="panel-rec">
+                        <p style="font-size:.92rem;color:#6C757D;margin-bottom:1rem">
+                            Discover medicines frequently purchased together using Apriori association rule mining.
+                        </p>
+
+                        <div class="rec-search-row">
+                            <input type="text" id="recMedInput" placeholder="e.g. Paracetamol, Amoxicillin…"
+                                list="recMedDatalist" autocomplete="off">
+                            <datalist id="recMedDatalist"></datalist>
+                            <button class="btn btn-primary" id="recSearchBtn">Find Pairs</button>
+                        </div>
+
+                        <div id="recResults">
+                            <div style="padding:2rem;text-align:center;color:#aaa">
+                                <div style="font-size:3rem;margin-bottom:.75rem">🛒</div>
+                                <p>Enter a medicine name to see what it's commonly bought with.</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+
             </div>
         </main>
     </div>
@@ -294,13 +469,16 @@
 
     <footer class="footer">
         <div class="container">
-            <p>&copy; 2026 Pharma Pulse. All rights reserved. | <a href="#">Privacy Policy</a> | <a href="#">Terms of Service</a></p>
+            <p>&copy; 2026 Pharma Pulse. All rights reserved. | <a href="#">Privacy Policy</a> | <a href="#">Terms of
+                    Service</a></p>
         </div>
     </footer>
 
     <script src="jwt_utils.js"></script>
     <script src="api-service.js"></script>
+    <script src="ml-admin.js"></script>
     <script src="app.js"></script>
     <script src="admin.js"></script>
 </body>
+
 </html>
