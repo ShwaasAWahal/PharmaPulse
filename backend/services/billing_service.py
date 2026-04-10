@@ -130,3 +130,6 @@ def get_sales(branch_id=None, from_date=None, to_date=None, page=1, per_page=20)
         "page": page,
         "per_page": per_page,
     }
+
+def get_sale_by_invoice_number(invoice_number):
+    return Sale.query.filter_by(invoice_number=invoice_number).first()

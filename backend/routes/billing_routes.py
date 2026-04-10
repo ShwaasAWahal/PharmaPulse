@@ -119,6 +119,19 @@ def get_invoice_json(sale_id):
     }
     return jsonify({"success": True, "invoice": invoice}), 200
 
+@billing_bp.get("/invoice/<string:invoice_number>")
+@jwt_required()
+def get_invoice_by_number(invoice_number):
+    sale = billing_service.get_sale_by_invoice_number(invoice_number)
+
+    if not sale:
+        return jsonify({
+            "success": False,
+            "message": "Order not found"
+        }), 404
+
+    # reuse existing logic
+    return get_invoice_json(sale.id)
 
 # ── Prescription upload ────────────────────────────────────────────────────────
 

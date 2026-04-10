@@ -56,7 +56,7 @@ async function loadSalesPrediction(horizonDays = 30) {
 
     try {
         const resp = await mlApiPost('/ml/predict-demand', { horizon_days: horizonDays });
-        console.log("ML API response:", resp);
+        // console.log("ML API response:", resp);
         if (!resp.success) throw new Error(resp.message);
 
         const { predictions, total_predicted_sales, avg_daily_sales, horizon_days, model_info } = resp;
@@ -293,7 +293,7 @@ async function fetchRecommendations() {
 
     try {
         const resp = await mlApiPost('/ml/recommend-together', { medicine_name: name });
-        console.log(resp)
+        // console.log(resp)
 
         if (!resp.success) {
             mlError('recResults', resp.message || 'No recommendations found.');
@@ -378,23 +378,23 @@ function recAddToSearch(name) {
 
 // ── ML Status check ───────────────────────────────────────────
 
-async function checkMLStatus() {
-    const bar = document.getElementById('mlStatusBar');
-    if (!bar) return;
-    try {
-        const resp = await mlApiGet('/ml/status');
-        const { overall, models } = resp;
-        const colour = overall === 'ok' ? '#22C55E' : '#F59E0B';
-        bar.innerHTML = `
-            <span style="color:${colour};font-weight:600">● ML Status: ${overall.toUpperCase()}</span>
-            ${Object.entries(models).map(([k, v]) => `
-                <span style="margin-left:1rem;font-size:.82rem;color:${v.status === 'ok' ? '#22C55E' : '#EF4444'}">
-                    ${k === 'demand_predictor' ? '📈' : k === 'alternate_medicine' ? '💊' : '🛒'} ${v.status}
-                </span>`).join('')}`;
-    } catch {
-        bar.innerHTML = `<span style="color:#EF4444;font-weight:600">● ML backend unreachable</span>`;
-    }
-}
+// async function checkMLStatus() {
+//     const bar = document.getElementById('mlStatusBar');
+//     if (!bar) return;
+//     try {
+//         const resp = await mlApiGet('/ml/status');
+//         const { overall, models } = resp;
+//         const colour = overall === 'ok' ? '#22C55E' : '#F59E0B';
+//         bar.innerHTML = `
+//             <span style="color:${colour};font-weight:600">● ML Status: ${overall.toUpperCase()}</span>
+//             ${Object.entries(models).map(([k, v]) => `
+//                 <span style="margin-left:1rem;font-size:.82rem;color:${v.status === 'ok' ? '#22C55E' : '#EF4444'}">
+//                     ${k === 'demand_predictor' ? '📈' : k === 'alternate_medicine' ? '💊' : '🛒'} ${v.status}
+//                 </span>`).join('')}`;
+//     } catch {
+//         bar.innerHTML = `<span style="color:#EF4444;font-weight:600">● ML backend unreachable</span>`;
+//     }
+// }
 
 document.addEventListener("DOMContentLoaded", () => {
     const tabs = document.querySelectorAll(".ml-tab");

@@ -577,7 +577,7 @@ async function displayUsers() {
                     <span style="
                         background:${user.role === 'admin' ? '#553C9A' : '#2B6CB0'};
                         color:white;padding:.2rem .6rem;border-radius:999px;font-size:.8rem;font-weight:600">
-                        ${user.role.toUpperCase()}
+                        ${user.role === 'admin' ? user.role.toUpperCase() : "USER"}
                     </span>
                 </td>
                 <td>${user.branch_name || `Branch ${user.branch_id}` || '—'}</td>

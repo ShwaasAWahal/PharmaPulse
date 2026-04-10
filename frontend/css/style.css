@@ -1868,3 +1868,29 @@ input:checked + .toggle-slider:before {
 .inventory-search input::placeholder {
     color: #999;
 }
+.order-search-container {
+    display: flex;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.order-search-container input {
+    padding: 0.6rem;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    flex: 1;
+}
+
+#invoiceSearchResult {
+    margin-top: 1rem;
+}
+.invoice-card {
+    padding: 1rem;
+    border-radius: 10px;
+    background: #f9fafb;
+    border: 1px solid #eee;
+}
+
+.invoice-card h3 {
+    color: green;
+}

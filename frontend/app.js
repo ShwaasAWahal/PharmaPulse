@@ -377,6 +377,51 @@ function initCartPage() {
 
 // ── Orders page ───────────────────────────────────────────────────────────────
 
+document.getElementById("invoiceSearchBtn")?.addEventListener("click", searchInvoice);
+
+async function searchInvoice() {
+    const invoiceId = document.getElementById("invoiceSearchInput").value.trim();
+    const resultDiv = document.getElementById("invoiceSearchResult");
+
+    if (!invoiceId) {
+        resultDiv.innerHTML = `<p style="color:orange;">Please enter an Invoice ID</p>`;
+        return;
+    }
+
+    resultDiv.innerHTML = `<p>Searching...</p>`;
+
+    try {
+        const resp = await apiService.request(`/billing/invoice/${invoiceId}`);
+
+        if (!resp.success) {
+            resultDiv.innerHTML = `<p style="color:red;">Order not found</p>`;
+            return;
+        }
+
+        const inv = resp.invoice;
+
+        resultDiv.innerHTML = `
+            <div class="invoice-card">
+                <h3>✅ Invoice Found</h3>
+                <p><strong>ID:</strong> ${inv.invoice_number}</p>
+                <p><strong>Customer:</strong> ${inv.customer.name}</p>
+                <p><strong>Total:</strong> ₹${inv.total_amount}</p>
+                <p><strong>Date:</strong> ${new Date(inv.date).toLocaleString()}</p>
+
+                <h4>Items:</h4>
+                <ul>
+                    ${inv.items.map(i => `
+                        <li>${i.medicine} - ${i.qty} × ₹${i.unit_price}</li>
+                    `).join("")}
+                </ul>
+            </div>
+        `;
+
+    } catch (e) {
+        resultDiv.innerHTML = `<p style="color:red;">Error: ${e.message}</p>`;
+    }
+}
+
 async function initOrdersPage() {
     const container    = document.getElementById('ordersContainer');
     const emptyOrders  = document.getElementById('emptyOrders');
@@ -439,9 +484,9 @@ async function initOrdersPage() {
         filtered.forEach(order => {
             const itemsHTML = (order.items || []).map(item =>
                 `<div class="order-item">
-                    <span class="order-item-name">${item.medicine_name || item.name || 'Item'}</span>
-                    <span class="order-item-qty">Qty: ${item.quantity || 0}</span>
-                    <span class="order-item-price">${formatCurrency((item.unit_price || 0) * (item.quantity || 0))}</span>
+                    <span class="order-item-name">${item.medicine || item.generic || 'Item'}</span>
+                    <span class="order-item-qty">Qty: ${item.qty || 0}</span>
+                    <span class="order-item-price">${formatCurrency((item.unit_price || 0) * (item.qty || 0))}</span>
                 </div>`
             ).join('');
 
@@ -455,7 +500,7 @@ async function initOrdersPage() {
                     </div>
                     <span class="order-status ${order.status}">${order.status.toUpperCase()}</span>
                 </div>
-                <div class="order-items">${itemsHTML || '<p style="color:#888;padding:.5rem 0">No item details</p>'}</div>
+                <div class="order-items">${itemsHTML}</div>
                 <div style="text-align:right;padding:1rem 0;border-top:1px solid #e2e8f0;font-weight:700">
                     Total: ${formatCurrency(order.totalAmount)}
                 </div>

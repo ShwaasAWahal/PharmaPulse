@@ -41,7 +41,7 @@ function displayUserProfile() {
     if (displayName)  displayName.textContent  = u.full_name || 'N/A';
     if (displayPhone) displayPhone.textContent = u.branch_name || 'N/A';
     if (displayEmail) displayEmail.textContent = u.email    || 'N/A';
-    if (displayDob)   displayDob.textContent   = u.role     || 'N/A';
+    if (displayDob)   displayDob.textContent   = (u.role == 'admin' ? "Admin" : "User")     || 'N/A';
 
     populateProfileForm();
 }
