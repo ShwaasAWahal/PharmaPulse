@@ -251,3 +251,25 @@ def dashboard_summary():
         "total_branches": Branch.query.filter_by(is_active=True).count(),
         "total_users": User.query.filter_by(is_active=True).count(),
     }), 200
+
+
+# ── GET /api/analytics/expiry ──────────────────────────────────────────────────
+
+@analytics_bp.get("/expiry")
+@jwt_required()
+def expiry_analytics():
+    """
+    Returns medicines expiring within N days.
+    Query param: days_threshold (default 30)
+    Used by the admin expiry tracking panel.
+    """
+    from services.inventory_service import get_expiring_soon
+    days      = request.args.get("days_threshold", 30, type=int)
+    branch_id = request.args.get("branch_id", type=int)
+    items     = get_expiring_soon(days=days, branch_id=branch_id)
+    return jsonify({
+        "success":       True,
+        "expiring_items": [i.to_dict() for i in items],
+        "count":         len(items),
+        "days_threshold": days,
+    }), 200

@@ -1,18 +1,20 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Order History - Pharma Pulse</title>
     <link rel="stylesheet" href="./css/style.css">
 </head>
+
 <body>
     <nav class="navbar">
         <div class="container">
             <div class="navbar-brand">
                 <svg class="logo-icon" viewBox="0 0 24 24" width="28" height="28">
-                    <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/>
-                    <path d="M12 6v12M6 12h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2" />
+                    <path d="M12 6v12M6 12h12" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
                 </svg>
                 <span class="brand-name">Pharma Pulse</span>
             </div>
@@ -23,7 +25,7 @@
                     <span class="cart-badge" id="cartBadge">0</span>
                 </a>
                 <a href="orders.html" class="nav-link active">Orders</a>
-                <a href="admin.html" class="nav-link">Admin</a>
+                <a href="admin.html" class="nav-link" id="adminLink">Admin</a>
                 <a href="profile.html" class="nav-link">Profile</a>
             </div>
         </div>
@@ -35,7 +37,7 @@
             <p class="subtitle">Track and manage your medicine orders</p>
         </div>
 
-        <div class="filter-section">
+        <!-- <div class="filter-section">
             <div class="filter-group">
                 <label for="statusFilter">Filter by Status</label>
                 <select id="statusFilter" class="filter-select">
@@ -46,7 +48,14 @@
                     <option value="cancelled">Cancelled</option>
                 </select>
             </div>
+        </div> -->
+
+        <div class="order-search-container">
+            <input type="text" id="invoiceSearchInput" placeholder="Enter Invoice ID">
+            <button id="invoiceSearchBtn" class="btn btn-primary">Search</button>
         </div>
+
+        <div id="invoiceSearchResult"></div>
 
         <div class="orders-container" id="ordersContainer">
             <!-- Will be populated by JavaScript -->
@@ -65,12 +74,15 @@
 
     <footer class="footer">
         <div class="container">
-            <p>&copy; 2026 Pharma Pulse. All rights reserved. | <a href="#">Privacy Policy</a> | <a href="#">Terms of Service</a></p>
+            <p>&copy; 2026 Pharma Pulse. All rights reserved. | <a href="#">Privacy Policy</a> | <a href="#">Terms of
+                    Service</a></p>
         </div>
     </footer>
 
     <script src="jwt_utils.js"></script>
     <script src="api-service.js"></script>
     <script src="app.js"></script>
+    <script src="navbar.js"></script>
 </body>
+
 </html>

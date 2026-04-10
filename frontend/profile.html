@@ -23,7 +23,7 @@
                     <span class="cart-badge" id="cartBadge">0</span>
                 </a>
                 <a href="orders.html" class="nav-link">Orders</a>
-                <a href="admin.html" class="nav-link">Admin</a>
+                <a href="admin.html" class="nav-link" id = "adminLink">Admin</a>
                 <a href="profile.html" class="nav-link active">Profile</a>
             </div>
         </div>
@@ -64,35 +64,35 @@
                             <span class="info-value" id="displayName">John Doe</span>
                         </div>
                         <div class="info-row">
-                            <span class="info-label">Phone</span>
-                            <span class="info-value" id="displayPhone">+91 98765 43210</span>
+                            <span class="info-label">Branch</span>
+                            <span class="info-value" id="displayPhone">main</span>
                         </div>
                         <div class="info-row">
                             <span class="info-label">Email</span>
                             <span class="info-value" id="displayEmail">john@example.com</span>
                         </div>
                         <div class="info-row">
-                            <span class="info-label">Date of Birth</span>
-                            <span class="info-value" id="displayDob">15/03/1990</span>
+                            <span class="info-label">Role</span>
+                            <span class="info-value" id="displayDob">user</span>
                         </div>
                     </div>
 
                     <form id="personalForm" class="info-form" style="display: none;">
                         <div class="form-group">
                             <label for="fullName">Full Name</label>
-                            <input type="text" id="fullName" value="John Doe" required>
+                            <input type="text" id="fullName" required>
                         </div>
                         <div class="form-group">
                             <label for="phone">Phone</label>
-                            <input type="tel" id="phone" value="+91 98765 43210" required>
+                            <input type="tel" id="phone" required>
                         </div>
                         <div class="form-group">
                             <label for="email">Email</label>
-                            <input type="email" id="email" value="john@example.com" required>
+                            <input type="email" id="email" required>
                         </div>
                         <div class="form-group">
                             <label for="dob">Date of Birth</label>
-                            <input type="date" id="dob" value="1990-03-15" required>
+                            <input type="date" id="dob">
                         </div>
                         <div class="form-actions">
                             <button type="submit" class="btn btn-primary">Save Changes</button>
@@ -224,5 +224,6 @@
     <script src="api-service.js"></script>
     <script src="app.js"></script>
     <script src="profile.js"></script>
+    <script src="navbar.js"></script>
 </body>
 </html>

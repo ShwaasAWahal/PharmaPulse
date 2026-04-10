@@ -7,53 +7,41 @@ class APIService {
         this.baseURL = baseURL;
     }
 
-    /**
-     * Get authorization headers with JWT token
-     */
     getHeaders(additionalHeaders = {}) {
-        const headers = {
-            'Content-Type': 'application/json',
-            ...additionalHeaders
-        };
-
+        const headers = { 'Content-Type': 'application/json', ...additionalHeaders };
         const accessToken = jwtManager.getAccessToken();
-        if (accessToken) {
-            headers['Authorization'] = `Bearer ${accessToken}`;
-        }
-
+        if (accessToken) headers['Authorization'] = `Bearer ${accessToken}`;
         return headers;
     }
 
-    /**
-     * Make API request with automatic token refresh
-     */
     async request(endpoint, options = {}) {
         const url = `${this.baseURL}${endpoint}`;
         const method = options.method || 'GET';
         const body = options.body ? JSON.stringify(options.body) : undefined;
-        const additionalHeaders = options.headers || {};
 
         try {
             let response = await fetch(url, {
                 method,
-                headers: this.getHeaders(additionalHeaders),
+                headers: this.getHeaders(options.headers || {}),
                 body
             });
 
-            // If token expired, try to refresh and retry
             if (response.status === 401) {
                 const refreshed = await jwtManager.refreshAccessToken();
                 if (refreshed) {
                     response = await fetch(url, {
                         method,
-                        headers: this.getHeaders(additionalHeaders),
+                        headers: this.getHeaders(options.headers || {}),
                         body
                     });
+                } else {
+                    window.location.href = 'login.html';
+                    return;
                 }
             }
 
             if (!response.ok) {
-                const errorData = await response.json();
+                const errorData = await response.json().catch(() => ({}));
                 throw new Error(errorData.message || `HTTP ${response.status}`);
             }
 
@@ -64,120 +52,186 @@ class APIService {
         }
     }
 
-    // ─────────────────────────────────────────────────────────────
-    // AUTH ENDPOINTS
-    // ─────────────────────────────────────────────────────────────
+    // ── AUTH ──────────────────────────────────────────────────────
 
-    /**
-     * Login with email and password
-     */
     async login(email, password) {
-        return await this.request('/auth/login', {
-            method: 'POST',
-            body: { email, password }
-        });
+        return await this.request('/auth/login', { method: 'POST', body: { email, password } });
     }
 
-    /**
-     * Refresh access token
-     */
-    async refreshToken() {
-        const refreshToken = jwtManager.getRefreshToken();
-        return await this.request('/auth/refresh', {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${refreshToken}`
-            }
-        });
-    }
-
-    /**
-     * Get current user profile
-     */
     async getCurrentUser() {
-        return await this.request('/auth/me', {
-            method: 'GET'
-        });
+        return await this.request('/auth/me');
     }
 
-    /**
-     * Get user by ID (admin only)
-     */
-    async getUserById(userId) {
-        return await this.request(`/auth/users/${userId}`, {
-            method: 'GET'
-        });
+    async updateMe(data) {
+        return await this.request('/auth/me', { method: 'PUT', body: data });
     }
 
-    /**
-     * List all users (admin only, with pagination)
-     */
-    async getAllUsers(page = 1, perPage = 20, branchId = null) {
-        let query = `?page=${page}&per_page=${perPage}`;
-        if (branchId) {
-            query += `&branch_id=${branchId}`;
-        }
-        return await this.request(`/auth/users${query}`, {
-            method: 'GET'
-        });
-    }
-
-    /**
-     * Change password
-     */
     async changePassword(oldPassword, newPassword) {
         return await this.request('/auth/me/password', {
             method: 'PUT',
-            body: {
-                old_password: oldPassword,
-                new_password: newPassword
-            }
+            body: { old_password: oldPassword, new_password: newPassword }
         });
     }
 
-    /**
-     * Update user (admin only)
-     */
-    async updateUser(userId, data) {
-        return await this.request(`/auth/users/${userId}`, {
-            method: 'PUT',
-            body: data
-        });
+    async getAllUsers(page = 1, perPage = 20, branchId = null) {
+        let q = `?page=${page}&per_page=${perPage}`;
+        if (branchId) q += `&branch_id=${branchId}`;
+        return await this.request(`/auth/users${q}`);
     }
 
-    /**
-     * Deactivate user (admin only)
-     */
-    async deactivateUser(userId) {
-        return await this.request(`/auth/users/${userId}`, {
-            method: 'DELETE'
-        });
-    }
-
-    /**
-     * Register new user (admin only)
-     */
     async registerUser(fullName, email, password, role, branchId = null) {
         return await this.request('/auth/register', {
             method: 'POST',
-            body: {
-                full_name: fullName,
-                email,
-                password,
-                role,
-                branch_id: branchId
-            }
+            body: { full_name: fullName, email, password, role, branch_id: branchId }
         });
     }
 
-    /**
-     * Logout (clear tokens locally)
-     */
+    async updateUser(userId, data) {
+        return await this.request(`/auth/users/${userId}`, { method: 'PUT', body: data });
+    }
+
+    async deactivateUser(userId) {
+        return await this.request(`/auth/users/${userId}`, { method: 'DELETE' });
+    }
+
     logout() {
         jwtManager.clearTokens();
-        return Promise.resolve({ success: true, message: "Logged out successfully" });
+        return Promise.resolve({ success: true });
+    }
+
+    // ── MEDICINES ─────────────────────────────────────────────────
+
+    async listMedicines(page = 1, perPage = 20, search = '', category = '', supplierId = null) {
+        let q = `?page=${page}&per_page=${perPage}`;
+        if (search)     q += `&q=${encodeURIComponent(search)}`;
+        if (category)   q += `&category=${encodeURIComponent(category)}`;
+        if (supplierId) q += `&supplier_id=${supplierId}`;
+        return await this.request(`/medicines${q}`);
+    }
+
+    async getMedicine(medicineId, includeInventory = false) {
+        return await this.request(`/medicines/${medicineId}?include_inventory=${includeInventory}`);
+    }
+
+    async addMedicine(data) {
+        return await this.request('/medicines', { method: 'POST', body: data });
+    }
+
+    async updateMedicine(medicineId, data) {
+        return await this.request(`/medicines/${medicineId}`, { method: 'PUT', body: data });
+    }
+
+    async deactivateMedicine(medicineId) {
+        return await this.request(`/medicines/${medicineId}`, { method: 'DELETE' });
+    }
+
+    async scanBarcode(barcode, branchId = 1) {
+        return await this.request('/medicines/barcode/scan', {
+            method: 'POST',
+            body: { barcode, branch_id: branchId }
+        });
+    }
+
+    // ── INVENTORY ─────────────────────────────────────────────────
+
+    async listInventory(page = 1, perPage = 20, branchId = null, medicineId = null, includeExpired = true, lowStockOnly = false) {
+        let q = `?page=${page}&per_page=${perPage}&include_expired=${includeExpired}&low_stock_only=${lowStockOnly}`;
+        if (branchId)   q += `&branch_id=${branchId}`;
+        if (medicineId) q += `&medicine_id=${medicineId}`;
+        return await this.request(`/inventory${q}`);
+    }
+
+    async addInventory(data) {
+        return await this.request('/inventory', { method: 'POST', body: data });
+    }
+
+    async updateInventory(inventoryId, data) {
+        return await this.request(`/inventory/${inventoryId}`, { method: 'PUT', body: data });
+    }
+
+    async getStockSummary(branchId = null) {
+        let q = branchId ? `?branch_id=${branchId}` : '';
+        return await this.request(`/inventory/stock-summary${q}`);
+    }
+
+    // ── BILLING ───────────────────────────────────────────────────
+
+    async createBill(billData) {
+        return await this.request('/billing/bills', { method: 'POST', body: billData });
+    }
+
+    async listBills(page = 1, perPage = 20, branchId = null, fromDate = null, toDate = null) {
+        let q = `?page=${page}&per_page=${perPage}`;
+        if (branchId) q += `&branch_id=${branchId}`;
+        if (fromDate) q += `&from_date=${fromDate}`;
+        if (toDate)   q += `&to_date=${toDate}`;
+        return await this.request(`/billing/bills${q}`);
+    }
+
+    async getBill(saleId) {
+        return await this.request(`/billing/bills/${saleId}`);
+    }
+
+    async getInvoiceJSON(saleId) {
+        return await this.request(`/billing/bills/${saleId}/invoice`);
+    }
+
+    // ── ANALYTICS ─────────────────────────────────────────────────
+
+    async getDashboardSummary(branchId = null) {
+        let q = branchId ? `?branch_id=${branchId}` : '';
+        return await this.request(`/analytics/summary${q}`);
+    }
+
+    async getTopMedicines(days = 30, limit = 10, branchId = null) {
+        let q = `?days=${days}&limit=${limit}`;
+        if (branchId) q += `&branch_id=${branchId}`;
+        return await this.request(`/analytics/top-medicines${q}`);
+    }
+
+    async getMonthlyRevenue(months = 12, branchId = null) {
+        let q = `?months=${months}`;
+        if (branchId) q += `&branch_id=${branchId}`;
+        return await this.request(`/analytics/monthly-revenue${q}`);
+    }
+
+    async getExpiryAnalytics(daysThreshold = 30, branchId = null) {
+        let q = `?days_threshold=${daysThreshold}`;
+        if (branchId) q += `&branch_id=${branchId}`;
+        return await this.request(`/analytics/expiry${q}`);
+    }
+
+    async getExpiredStock(branchId = null) {
+        let q = branchId ? `?branch_id=${branchId}` : '';
+        return await this.request(`/analytics/expired-stock${q}`);
+    }
+
+    async getSupplierPerformance() {
+        return await this.request('/analytics/supplier-performance');
+    }
+
+    // ── ML ────────────────────────────────────────────────────────
+
+    async predictDemand(medicineId, branchId, horizonDays = 30) {
+        return await this.request('/ml/predict-demand', {
+            method: 'POST',
+            body: { medicine_id: medicineId, branch_id: branchId, horizon_days: horizonDays }
+        });
+    }
+
+    async recommendGeneric(brandMedicineName) {
+        return await this.request('/ml/recommend-generic', {
+            method: 'POST',
+            body: { brand_medicine_name: brandMedicineName }
+        });
+    }
+
+    async recommendTogether(medicineName) {
+        return await this.request('/ml/recommend-together', {
+            method: 'POST',
+            body: { medicine_name: medicineName }
+        });
     }
 }
 
-// Create global instance
 const apiService = new APIService();
