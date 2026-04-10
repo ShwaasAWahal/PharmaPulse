@@ -267,11 +267,11 @@ medicineForm?.addEventListener('submit', async (e) => {
         generic_name: document.getElementById('genericName')?.value?.trim() || null,
         brand: document.getElementById('company')?.value?.trim() || null,
         category: document.getElementById('category')?.value?.trim() || null,
-        purchase_price: parseFloat(document.getElementById('purchasePrice')?.value || 0),
+        quantity: parseFloat(document.getElementById('quantity')?.value || 0),
         selling_price: parseFloat(document.getElementById('sellingPrice')?.value || 0),
     };
 
-    if (!data.name || !data.purchase_price || !data.selling_price) {
+    if (!data.name || !data.quantity || !data.selling_price) {
         showNotification('Please fill all required fields.', 'error');
         return;
     }
