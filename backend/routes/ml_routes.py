@@ -15,9 +15,9 @@ logger = logging.getLogger(__name__)
 ml_bp = Blueprint("ml", __name__, url_prefix="/api/ml")
 
 
-def _load_predictor():
+def _load_predictor(medicine_id=None, branch_id=None):
     from ml.demand_predictor import get_predictor
-    return get_predictor()
+    return get_predictor(medicine_id, branch_id)
 
 def _load_finder():
     from ml.alternate_medicine import get_finder
@@ -37,12 +37,14 @@ def predict_demand():
     """
     data = request.get_json(silent=True) or {}
     horizon_days = int(data.get("horizon_days", 30))
+    medicine_id = data.get("medicine_id")
+    branch_id = data.get("branch_id")
 
     if horizon_days < 1 or horizon_days > 365:
         return jsonify({"success": False, "message": "horizon_days must be between 1 and 365."}), 400
 
     try:
-        predictor = _load_predictor()
+        predictor = _load_predictor(medicine_id, branch_id)
         predictions = predictor.predict_next_n_days(horizon_days)
         summary = predictor.summary()
         total_predicted = round(sum(p["predicted_sales"] for p in predictions), 2)
